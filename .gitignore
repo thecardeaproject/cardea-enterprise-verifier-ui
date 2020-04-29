@@ -1,0 +1,19 @@
+# OS temp files
+.DS_Store
+
+# Node stuff
+npm-debug.log
+node_modules
+.env
+
+# Universal editor config
+.editorconfig
+
+# VIM swap files
+.*.swp
+
+# VIM temp files
+*~
+
+# VSCode
+.vscode
