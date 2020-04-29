@@ -1,11 +1,6 @@
 # OS temp files
 .DS_Store
 
-# Node stuff
-npm-debug.log
-node_modules
-.env
-
 # Universal editor config
 .editorconfig
 
@@ -17,3 +12,8 @@ node_modules
 
 # VSCode
 .vscode
+
+# Node stuff
+npm-debug.log
+node_modules
+.env
