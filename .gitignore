@@ -1,19 +1,33 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
 # OS temp files
 .DS_Store
 
-# Universal editor config
+# Editor files
 .editorconfig
-
-# VIM swap files
+.vscode
+*~
 .*.swp
 
-# VIM temp files
-*~
-
-# VSCode
-.vscode
-
-# Node stuff
-npm-debug.log
+# Dependencies
+/.pnp
+.pnp.js
 node_modules
+
+# Environment variables
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+/coverage
+
+# Production Output
+/build

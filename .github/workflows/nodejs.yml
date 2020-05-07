@@ -3,15 +3,7 @@
 
 name: Node.js CI
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-
-defaults:
-  run:
-    working-directory: aries-enterprise-spa
+on: [push, pull_request]
 
 jobs:
   build:
