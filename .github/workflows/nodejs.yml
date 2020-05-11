@@ -38,6 +38,3 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         name: CI
         conclusion: ${{ job }}
-        output:
-          summary: ${{ steps.test.outputs.summary }}
-          text_description: ${{ steps.test.outputs.description }}
