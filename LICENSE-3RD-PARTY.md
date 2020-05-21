@@ -9,6 +9,7 @@ This software project includes the following third-party or open-source tools, c
 See also: https://mit-license.org/
 
 * [React Router](https://github.com/ReactTraining/react-router)
+* [Styled Components](https://github.com/styled-components/styled-components)
 
 ## Complete Text of Relevant Licenses
 
