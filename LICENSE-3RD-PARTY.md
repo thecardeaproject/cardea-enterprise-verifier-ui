@@ -10,6 +10,7 @@ See also: https://mit-license.org/
 
 * [React Router](https://github.com/ReactTraining/react-router)
 * [Styled Components](https://github.com/styled-components/styled-components)
+* [Prettier](https://github.com/prettier/prettier)
 
 ## Complete Text of Relevant Licenses
 

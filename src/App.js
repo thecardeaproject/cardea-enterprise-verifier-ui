@@ -1,32 +1,11 @@
-/*
-Copyright 2020 by Indicio Tech.
+import React from 'react'
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom'
 
-   http://www.apache.org/licenses/LICENSE-2.0
+import styled from 'styled-components'
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-import React from 'react';
-
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Link
-} from "react-router-dom";
-
-import styled from 'styled-components';
-
-import logo from './logo.svg';
-import './App.css';
+import logo from './logo.svg'
+import './App.css'
 
 const Frame = styled.div`
   font-size: 18px;
@@ -38,13 +17,13 @@ function App() {
       <Router>
         <Switch>
           <Route
-            path='/test'
+            path="/test"
             render={() => (
               <div className="App">
                 <header className="App-header">
                   <img src={logo} className="App-logo" alt="logo" />
                   <p>
-                    <q>Hello Test!</q>
+                    <q>Hello Indicio!</q>
                   </p>
                   <a
                     className="App-link"
@@ -57,15 +36,19 @@ function App() {
                 </header>
                 <div>
                   <ul>
-                    <li><Link to="/">Home</Link></li>
-                    <li><Link to="/test">Test</Link></li>
+                    <li>
+                      <Link to="/">Home</Link>
+                    </li>
+                    <li>
+                      <Link to="/test">Test</Link>
+                    </li>
                   </ul>
                 </div>
               </div>
-            )
-          } />
+            )}
+          />
           <Route
-            path='/'
+            path="/"
             render={() => (
               <div className="App">
                 <header className="App-header">
@@ -84,17 +67,21 @@ function App() {
                 </header>
                 <div>
                   <ul>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/test">Test</a></li>
+                    <li>
+                      <a href="/">Home</a>
+                    </li>
+                    <li>
+                      <a href="/test">Test</a>
+                    </li>
                   </ul>
                 </div>
               </div>
-            )
-          } />
+            )}
+          />
         </Switch>
       </Router>
     </Frame>
-  );
+  )
 }
 
-export default App;
+export default App
