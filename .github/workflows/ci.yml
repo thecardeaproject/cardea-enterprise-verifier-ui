@@ -11,7 +11,6 @@ on:
 
 jobs:
   ci:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -19,26 +18,30 @@ jobs:
         node-version: [12.x, 14.x]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up services
-      run: scripts/ci services setup
+      - name: Set up services
+        run: scripts/ci services setup
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - uses: actions/cache@v1
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+      # ===========================================================================================
+      # NPM build and test
+      # ===========================================================================================
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+      - run: npm ci
+      - run: npm run style-check
+      - run: npm run build --if-present
+      - run: npm test
+      # ===========================================================================================
 
-    - name: Tear down services
-      run: scripts/ci services teardown
-
+      - name: Tear down services
+        run: scripts/ci services teardown
