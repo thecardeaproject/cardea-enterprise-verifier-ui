@@ -12,8 +12,9 @@ This is just a reminder about the most common mistakes. Please make sure that yo
 
 If an item doesn't apply to your pull request, **check it anyway** to make it apparent that there's nothing to do.
 
+- [ ] All commits contain a DCO `Signed-off-by` line (we use the [DCO GitHub app](https://github.com/apps/dco) to enforce this).
 - [ ] Updated LICENSE-3RD-PARTY.md for any added dependencies or vendored components.
-- [ ] Added **tests** for changed code (run `CI=true npm run test` to ensure they pass on your box)
+- [ ] Added **tests** for changed code (run `scripts/preflight` to run tests and check code style).
 - [ ] Prefixed code comments with GitHub nick and an appropriate prefix.
 - [ ] Coding style is consistent with the rest of the framework.
 - [ ] Updated **documentation** for changed code and new or modified features.
