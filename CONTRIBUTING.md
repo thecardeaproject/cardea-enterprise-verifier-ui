@@ -37,7 +37,9 @@ $ scripts/preflight
 
 Commit messages should be formatted according to the [Conventional Commits](https://www.conventionalcommits.org/) style.
 
-Also, we require all contributors to agree to the [DCO](https://developercertificate.org/). Every commit must contain a DCO `Signed-off-by` line (we use the [DCO GitHub app](https://github.com/apps/dco) to enforce this). You can use something like [coderanger/dco](https://github.com/coderanger/dco) to automate this process.
+Also, we require all contributors to agree to the [DCO](https://developercertificate.org/). Every commit must contain a DCO `Signed-off-by` line (we use the [DCO GitHub app](https://github.com/apps/dco) to enforce this). To automatically add this line, simply include the `-s` flag when executing `git commit`.
+
+Unfortunately, tools such as [coderanger/dco](https://github.com/coderanger/dco) will not work once you have installed the [Husky](https://github.com/typicode/husky) `commit-msg` hook that we use for linting commit messages.
 
 ### Test coverage
 
