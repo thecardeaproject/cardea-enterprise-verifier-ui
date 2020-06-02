@@ -43,7 +43,7 @@ Unfortunately, tools such as [coderanger/dco](https://github.com/coderanger/dco)
 
 ### Test coverage
 
-Pull requests must maintain 100% test coverage of all code branches. This helps ensure the quality of the Falcon framework. To check coverage before submitting a pull request:
+Pull requests must maintain 100% test coverage of all code branches. This helps ensure the quality of the project. To check coverage before submitting a pull request:
 
 ```bash
 $ scripts/preflight
@@ -70,7 +70,7 @@ Project maintainers review each PR for the following:
 - [ ] **Correctness.** Is the logic correct? Does it behave correctly according to the goal of the feature or bug fix?
 - [ ] **Fit.** Is this feature or fix in keeping with the spirit of the project? Would this idea be better implemented as an add-on?
 - [ ] **Standards.** Does this change align with approved or standards-track RFCs, de-facto standards, and currently accepted best practices?
-- [ ] **Tests.** Does the PR implement sufficient test coverage in terms of value inputs, Python versions, and lines tested?
+- [ ] **Tests.** Does the PR implement sufficient test coverage in terms of value inputs, platforms, and lines tested?
 - [ ] **Compatibility.** Does it work across all of the project's supported runtimes and operating systems?
 - [ ] **UX.** Does it provide a good UX in terms of usability, performance, design, etc.?
 - [ ] **Docs.** Does this impact any existing documentation or require new documentation? If so, does this PR include the aforementioned docs, and is the language friendly, clear, helpful, and grammatically correct with no misspellings?
