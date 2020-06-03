@@ -2,8 +2,14 @@ import React from 'react'
 import { render } from '@testing-library/react'
 import App from './App'
 
-test('renders learn more link', () => {
-  const { getByText } = render(<App />)
-  const linkElement = getByText('Learn More About Indicio.tech')
-  expect(linkElement).toBeInTheDocument()
+test('Renders app frame', () => {
+  const { getById } = render(<App />)
+  const frameElement = document.getElementById('app-frame')
+  expect(frameElement).toBeInTheDocument()
+})
+
+test('Renders <main> element', () => {
+  const { getByElement } = render(<App />)
+  const mainElement = document.getElementsByTagName('main')
+  expect(mainElement.length).toBe(1)
 })

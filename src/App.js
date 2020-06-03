@@ -1,86 +1,131 @@
 import React from 'react'
 
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom'
+import { useContext } from 'react'
+
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom'
 
 import styled from 'styled-components'
+import { ThemeContext, ThemeProvider } from 'styled-components'
 
-import logo from './logo.svg'
+import AppHeader from './UI/AppHeader.js'
+
+//import theme from './theme.js'
 import './App.css'
 
 const Frame = styled.div`
-  font-size: 18px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+`
+const Main = styled.main`
+  flex: 9;
+  padding: 30px;
 `
 
-function App() {
+function App(theme) {
+  const themeContext = useContext(ThemeContext)
+
+  console.log('Current theme: ', themeContext)
+
   return (
-    <Frame>
+    <ThemeProvider theme={theme}>
       <Router>
         <Switch>
           <Route
-            path="/test"
-            render={() => (
-              <div className="App">
-                <header className="App-header">
-                  <img src={logo} className="App-logo" alt="logo" />
-                  <p>
-                    <q>Hello Indicio!</q>
-                  </p>
-                  <a
-                    className="App-link"
-                    href="https://indicio.tech"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Learn More About Indicio.tech
-                  </a>
-                </header>
-                <div>
-                  <ul>
-                    <li>
-                      <Link to="/">Home</Link>
-                    </li>
-                    <li>
-                      <Link to="/test">Test</Link>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            )}
+            path="/"
+            exact
+            render={({ match }) => {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader match={match} />
+                  <Main>
+                    <p>Home</p>
+                  </Main>
+                </Frame>
+              )
+            }}
           />
           <Route
-            path="/"
-            render={() => (
-              <div className="App">
-                <header className="App-header">
-                  <img src={logo} className="App-logo" alt="logo" />
-                  <p>
-                    <q>Hello World!</q>
-                  </p>
-                  <a
-                    className="App-link"
-                    href="https://indicio.tech"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Learn More About Indicio.tech
-                  </a>
-                </header>
-                <div>
-                  <ul>
-                    <li>
-                      <a href="/">Home</a>
-                    </li>
-                    <li>
-                      <a href="/test">Test</a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            )}
+            path="/settings"
+            render={({ match }) => {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader match={match} />
+                  <Main>
+                    <p>Settings</p>
+                  </Main>
+                </Frame>
+              )
+            }}
+          />
+          <Route
+            path="/contacts"
+            render={({ match }) => {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader match={match} />
+                  <Main>
+                    <p>Contacts</p>
+                  </Main>
+                </Frame>
+              )
+            }}
+          />
+          <Route
+            path="/contacts/invitations"
+            render={({ match }) => {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader match={match} />
+                  <Main>
+                    <p>Invitations</p>
+                  </Main>
+                </Frame>
+              )
+            }}
+          />
+          <Route
+            path="/credentials"
+            render={({ match }) => {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader match={match} />
+                  <Main>
+                    <p>Credentials</p>
+                  </Main>
+                </Frame>
+              )
+            }}
+          />
+          <Route
+            path="/verification"
+            render={({ match }) => {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader match={match} />
+                  <Main>
+                    <p>Verification</p>
+                  </Main>
+                </Frame>
+              )
+            }}
+          />
+          <Route
+            path="/messages"
+            render={({ match }) => {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader match={match} />
+                  <Main>
+                    <p>Messages</p>
+                  </Main>
+                </Frame>
+              )
+            }}
           />
         </Switch>
       </Router>
-    </Frame>
+    </ThemeProvider>
   )
 }
 
