@@ -1,123 +1,171 @@
-import React from 'react'
-
+import React, { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-
 import styled from 'styled-components'
 
-import theme from '../theme.js'
+import { CanUser } from './CanUser'
+import Cookies from 'universal-cookie'
 
 const List = styled.ul`
   margin: 0;
   padding: 0;
-
   list-style: none;
-
   & ul {
     display: none;
     position: relative;
-    top: -12px;
     padding: 0 0 0 20px;
   }
 `
-
 const Item = styled.li`
-  border-bottom: 1px solid ${theme.border};
-
+  border-bottom: 1px solid ${(props) => props.theme.border};
   &:first-child {
-    border-top: 1px solid ${theme.border};
+    border-top: 1px solid ${(props) => props.theme.border};
   }
-
   & li,
   & li:first-child {
     border: none;
   }
-
-  &.active {
-    border-right: 3px solid ${theme.primary};
-    background: ${theme.background_secondary};
+  & a.active {
+    border-right: 3px solid ${(props) => props.theme.primary_color};
+    background: ${(props) => props.theme.background_secondary};
   }
-
   &.active ul {
     display: block;
   }
 `
-
 const StyledLink = styled(NavLink)`
   display: block;
   padding: 20px 0 20px 20px;
-
   font-size: 16px;
   font-weight: bold;
   text-decoration: none;
   text-transform: uppercase;
-  color: #555;
-
+  color: ${(props) => props.theme.text_color};
   &:hover,
   &.active {
     text-decoration: underline;
-    color: ${theme.primary};
+    color: ${(props) => props.theme.primary_color};
+    border-right: 3px solid ${(props) => props.theme.primary_color};
+    background: ${(props) => props.theme.background_secondary};
   }
 `
-
 const StyledSubLink = styled(NavLink)`
   display: block;
   padding: 10px 0 10px 20px;
-
   font-size: 14px;
   text-decoration: none;
-  color: #555;
-
+  color: ${(props) => props.theme.text_color};
   &:hover,
   &.active {
     text-decoration: underline;
-    color: #6cba1f;
+    color: ${(props) => props.theme.primary_color};
+    background: none;
   }
 `
+function AppMenu(props) {
+  const cookies = new Cookies()
 
-function AppMenu({ match }) {
+  const [localUser, setLocalUser] = useState(null)
+
+  useEffect(() => {
+    if (cookies.get('user')) {
+      const userCookie = cookies.get('user')
+      setLocalUser(userCookie)
+    }
+  }, [])
+
   let pathMatch = ''
-  if (match.match.path !== undefined) {
-    pathMatch = match.match.path
+  if (props.match.path !== undefined) {
+    pathMatch = props.match.path
   }
-
-  return (
-    <nav id="app-menu">
-      <List>
-        <Item className={pathMatch === '/' ? 'active' : undefined}>
-          <StyledLink exact to="/">
-            Home
-          </StyledLink>
-        </Item>
-        <Item className={pathMatch === '/settings' ? 'active' : undefined}>
-          <StyledLink to="/settings">Settings</StyledLink>
-        </Item>
-        <Item className={pathMatch === '/contacts' ? 'active' : undefined}>
-          <StyledLink to="/contacts">Contacts</StyledLink>
-          <List>
-            <Item>
-              <StyledSubLink exact to="/contacts">
-                Contacts
-              </StyledSubLink>
-            </Item>
-            <Item>
-              <StyledSubLink to="/contacts/invitations">
-                Invitations
-              </StyledSubLink>
-            </Item>
-          </List>
-        </Item>
-        <Item className={pathMatch === '/credentials' ? 'active' : undefined}>
-          <StyledLink to="/credentials">Credentials</StyledLink>
-        </Item>
-        <Item className={pathMatch === '/verification' ? 'active' : undefined}>
-          <StyledLink to="/verification">Verification</StyledLink>
-        </Item>
-        <Item className={pathMatch === '/messages' ? 'active' : undefined}>
-          <StyledLink to="/messages">Messages</StyledLink>
-        </Item>
-      </List>
-    </nav>
-  )
+  if (localUser) {
+    return (
+      <nav id="app-menu">
+        <List>
+          <Item className={pathMatch === '/' ? 'active' : undefined}>
+            <StyledLink exact to="/">
+              Home
+            </StyledLink>
+          </Item>
+          {/*<Item className={pathMatch === '/invitations' ? 'active' : undefined}>
+            <StyledLink to="/invitations">
+              Invitations
+            </StyledLink>
+          </Item>*/}
+          <CanUser
+            user={localUser}
+            perform="contacts:read"
+            yes={() => (
+              <Item
+                className={
+                  pathMatch.includes('/contacts') ? 'active' : undefined
+                }
+              >
+                <StyledLink to="/contacts">Contacts</StyledLink>
+                {/*<List>
+              <Item className={pathMatch === '/contacts' ? 'active' : undefined}>
+                <StyledSubLink exact to="/contacts">
+                  Contacts
+                </StyledSubLink>
+              </Item>
+              <Item>
+                <StyledSubLink to="/contacts/invitations">
+                  Invitations
+                </StyledSubLink>
+              </Item>
+            </List>*/}
+              </Item>
+            )}
+          />
+          <CanUser
+            user={localUser}
+            perform="credentials:read"
+            yes={() => (
+              <Item
+                className={pathMatch === '/credentials' ? 'active' : undefined}
+              >
+                <StyledLink to="/credentials">Credentials</StyledLink>
+              </Item>
+            )}
+          />
+          <CanUser
+            user={localUser}
+            perform="users:read"
+            yes={() => (
+              <Item className={pathMatch === '/users' ? 'active' : undefined}>
+                <StyledLink to="/users">Users</StyledLink>
+              </Item>
+            )}
+          />
+          {/* <CanUser
+            user={localUser}
+            perform="basicMessages:read"
+            yes={() => (
+              <>
+                <Item
+                  className={pathMatch === '/messages' ? 'active' : undefined}
+                >
+                  <StyledLink to="/messages">Messages</StyledLink>
+                </Item>
+              </>
+            )}
+          /> */}
+          <CanUser
+            user={localUser}
+            perform="settings:read"
+            yes={() => (
+              <>
+                <Item
+                  className={pathMatch === '/settings' ? 'active' : undefined}
+                >
+                  <StyledLink to="/settings">Settings</StyledLink>
+                </Item>
+              </>
+            )}
+            no={() => ''}
+          />
+        </List>
+      </nav>
+    )
+  } else return null
 }
-
 export default AppMenu
