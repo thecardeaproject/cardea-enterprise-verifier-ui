@@ -50,8 +50,8 @@ const Main = styled.main`
 
 function App() {
   const defaultTheme = {
-    primary_color: '#407CD4',
-    secondary_color: '#40ADD4',
+    primary_color: '#386992',
+    secondary_color: '#4E556F',
     neutral_color: '#091C40',
     negative_color: '#ed003c',
     warning_color: '#e49b13',

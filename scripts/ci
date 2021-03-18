@@ -27,7 +27,7 @@ do_teardown() {
 
 
 display_usage() {
-    echo "Continuous Integration (CI) helper for aries-enterprise-spa"
+    echo "Continuous Integration (CI) helper for CARDEA"
     echo
     echo "Usage:"
     echo
