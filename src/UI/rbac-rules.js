@@ -26,7 +26,7 @@ const rules = {
     'users:updatePassword',
     'users:updateRoles',
   ],
-  technician: [
+  moderator: [
     'basicMessages:create',
     'basicMessages:read',
     'contacts:create',
