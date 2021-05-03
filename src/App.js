@@ -25,6 +25,8 @@ import ForgotPassword from './UI/ForgotPassword'
 import FullPageSpinner from './UI/FullPageSpinner'
 import Home from './UI/Home'
 import Login from './UI/Login'
+import Root from './UI/Root'
+
 import {
   useNotification,
   NotificationProvider,
@@ -910,9 +912,16 @@ function App() {
                   )
                 }}
               />
-              <Route path="/">
-                <Redirect to="/login" />
-              </Route>
+              <Route
+                path="/"
+                render={({ match, history }) => {
+                  return (
+                    <Frame>
+                      <Root />
+                    </Frame>
+                  )
+                }}
+              />
             </Switch>
           </Router>
         </NotificationProvider>
