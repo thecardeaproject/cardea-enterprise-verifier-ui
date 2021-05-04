@@ -1,0 +1,47 @@
+
+
+.home {
+  padding: 0px !important;
+  background-image: url("../assets/bg.jpeg");
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 100vh !important;
+}
+
+.img-fluid {
+  /* position: sticky; */
+  background: transparent;
+  z-index: 1;
+  height: 60px;
+  padding: 5px;
+}
+
+.avatar {
+  height: 94%;
+}
+
+.header {
+  color: white;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 43px;
+  letter-spacing: 0px;
+  font-family: "Montserrat", Arial, Tahoma, sans-serif;
+  margin-top: 30%;
+}
+.head {
+  color: white;
+  font-size: 22px;
+  line-height: 30px;
+}
+.para {
+  color: white;
+}
+
+@media only screen and (max-device-width: 1366px) {
+  .upper-fold {
+    background-attachment: scroll;
+  }
+}

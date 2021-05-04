@@ -915,12 +915,7 @@ function App() {
               <Route
                 path="/"
                 render={({ match, history }) => {
-                  return (
-                    <Frame>
-                      <Root />
-                    </Frame>
-                  )
-                }}
+                  return (<Root />)}}
               />
             </Switch>
           </Router>
