@@ -22,6 +22,10 @@
   height: 94%;
 }
 
+.right-fold {
+  background-color:rgba(0, 149, 235, 1);
+  border-radius: 25px;
+}
 .header {
   color: white;
   font-weight: 700;
@@ -34,10 +38,13 @@
 .head {
   color: white;
   font-size: 22px;
+  font-family: "Montserrat", Arial, Tahoma, sans-serif;
   line-height: 30px;
 }
 .para {
   color: white;
+  font-size: 26px;
+  font-family: "Montserrat", Arial, Tahoma, sans-serif;
 }
 
 @media only screen and (max-device-width: 1366px) {

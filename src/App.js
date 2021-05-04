@@ -125,6 +125,38 @@ function App() {
   // (JamesKEbert) Note: We may want to abstract the websockets out into a high-order component for better abstraction, especially potentially with authentication/authorization
 
   // Perform First Time Setup. Connect to Controller Server via Websockets
+  
+  // always configure the websocket for 
+  if (! websocket) {
+    let url = new URL('/api/ws', window.location.href)
+    url.protocol = url.protocol.replace('http', 'ws')
+    controllerSocket.current = new WebSocket(url.href)
+    setWebsocket(true)
+
+    controllerSocket.current.onclose = (event) => {
+      // Auto Reopen websocket connection
+      // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
+
+      setLoggedIn(false)
+      setWebsocket(!websocket)
+    }
+
+    // Error Handler
+    controllerSocket.current.onerror = (event) => {
+      setNotification('Client Error - Websockets', 'error')
+    }
+
+    // Receive new message from Controller Server
+    controllerSocket.current.onmessage = (message) => {
+      const parsedMessage = JSON.parse(message.data)
+
+      messageHandler(
+        parsedMessage.context,
+        parsedMessage.type,
+        parsedMessage.data
+      )
+    }
+  }
 
   // Setting up websocket and controllerSocket
   useEffect(() => {
@@ -238,9 +270,20 @@ function App() {
     }
   }, [session, loggedIn, users, user, websocket, image, loggedInUserState]) // (Simon) We have to listen to all 7 to for the app to function properly
 
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   // Send a message to the Controller server
   function sendMessage(context, type, data = {}) {
-    controllerSocket.current.send(JSON.stringify({ context, type, data }))
+    if (controllerSocket.current.readyState !== controllerSocket.current.OPEN)
+    {
+      setTimeout(function() {
+        sendMessage(context, type, data);
+      }, 100);
+    } else {
+      controllerSocket.current.send(JSON.stringify({ context, type, data }))
+    }
   }
 
   // Handle inbound messages
@@ -915,7 +958,10 @@ function App() {
               <Route
                 path="/"
                 render={({ match, history }) => {
-                  return (<Root />)}}
+                  return (<Root
+                    QRCodeURL={QRCodeURL}
+                    sendRequest={sendMessage}
+                    contacts={contacts} />)}}
               />
             </Switch>
           </Router>
