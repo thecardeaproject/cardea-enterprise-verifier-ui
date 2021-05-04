@@ -23,7 +23,7 @@
 }
 
 .right-fold {
-  background-color:rgba(0, 149, 235, 1);
+  background-color:rgba(0, 149, 235, 0.9);
   border-radius: 25px;
 }
 .header {
