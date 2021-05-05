@@ -887,7 +887,7 @@ function App() {
     cookies.remove('user')
 
     if (history !== undefined) {
-      history.push('/login')
+      history.push('/admin/login')
     }
   }
 
@@ -960,7 +960,7 @@ function App() {
                 }}
               />
               <Route
-                path="/login"
+                path="/admin/login"
                 render={({ match, history }) => {
                   return (
                     <Frame id="app-frame">
@@ -978,7 +978,7 @@ function App() {
                 }}
               />
               <Route
-                path="/"
+                path="/admin"
                 render={({ match, history }) => {
                   return (<Root
                     QRCodeURL={QRCodeURL}
@@ -986,6 +986,9 @@ function App() {
                     contacts={contacts}
                     emailVerifiedData={emailVerifiedData} />)}}
               />
+              <Route path="/">
+                  <Redirect to="/admin" />
+              </Route>
             </Switch>
           </Router>
         </NotificationProvider>
@@ -1008,7 +1011,7 @@ function App() {
                 <Route exact path="/account-setup">
                   <Redirect to="/" />
                 </Route>
-                <Route exact path="/login">
+                <Route exact path="/admin/login">
                   <Redirect to="/" />
                 </Route>
                 <Route
@@ -1292,7 +1295,7 @@ function App() {
                   }}
                 />
                 {/* Redirect to root if no route match is found */}
-                <Route render={() => <Redirect to="/" />} />
+                <Route render={() => <Redirect to="/admin" />} />
               </Switch>
             </Router>
           </SessionProvider>
