@@ -66,6 +66,7 @@ function AppMenu(props) {
 
   const [localUser, setLocalUser] = useState(null)
 
+  
   useEffect(() => {
     if (cookies.get('user')) {
       const userCookie = cookies.get('user')
@@ -82,7 +83,7 @@ function AppMenu(props) {
       <nav id="app-menu">
         <List>
           <Item className={pathMatch === '/' ? 'active' : undefined}>
-            <StyledLink exact to="/">
+            <StyledLink exact to="/admin">
               Home
             </StyledLink>
           </Item>
@@ -100,7 +101,7 @@ function AppMenu(props) {
                   pathMatch.includes('/contacts') ? 'active' : undefined
                 }
               >
-                <StyledLink to="/contacts">Contacts</StyledLink>
+                <StyledLink to="/admin/contacts">Contacts</StyledLink>
                 {/*<List>
               <Item className={pathMatch === '/contacts' ? 'active' : undefined}>
                 <StyledSubLink exact to="/contacts">
@@ -123,7 +124,7 @@ function AppMenu(props) {
               <Item
                 className={pathMatch === '/credentials' ? 'active' : undefined}
               >
-                <StyledLink to="/credentials">Credentials</StyledLink>
+                <StyledLink to="/admin/credentials">Credentials</StyledLink>
               </Item>
             )}
           />
@@ -132,7 +133,7 @@ function AppMenu(props) {
             perform="users:read"
             yes={() => (
               <Item className={pathMatch === '/users' ? 'active' : undefined}>
-                <StyledLink to="/users">Users</StyledLink>
+                <StyledLink to="/admin/users">Users</StyledLink>
               </Item>
             )}
           />
@@ -157,7 +158,7 @@ function AppMenu(props) {
                 <Item
                   className={pathMatch === '/settings' ? 'active' : undefined}
                 >
-                  <StyledLink to="/settings">Settings</StyledLink>
+                  <StyledLink to="/admin/settings">Settings</StyledLink>
                 </Item>
               </>
             )}
