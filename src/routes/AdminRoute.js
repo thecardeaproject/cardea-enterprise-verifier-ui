@@ -47,7 +47,6 @@ function AdminRoutes(props) {
           path="/admin"
           exact
           render={({ match, history }) => {
-            console.log(props.loggedInUserState, props.organizationName, props.QRCodeURL)
             return (
               <Frame id="app-frame">
                 <AppHeader

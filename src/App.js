@@ -979,6 +979,9 @@ function App() {
                     contacts={contacts}
                     emailVerifiedData={emailVerifiedData} />)}}
               />
+              <Route exact path="/admin">
+                  <Redirect to="/admin/login" />
+              </Route>
               <Route path="/:any">
                   <Redirect to="/" />
               </Route>
