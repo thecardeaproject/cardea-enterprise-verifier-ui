@@ -69,7 +69,7 @@ function Root(props) {
                     </Col>) : (
                       connected ? (
                         <Col xs="6" className="right-fold">
-                          <h1 className="header">Verify your email credentials!</h1>
+                          <h1 className="header">Verify your email credentials</h1>
                           <h4 className="head"></h4>
                           <p className="para">
                             You will now receive a request on your mobile app to send your credential to us!
@@ -77,7 +77,7 @@ function Root(props) {
                         </Col>
                       ) : (
                         <Col xs="6" className="right-fold">
-                          <h1 className="header">Verify your email credentials!</h1>
+                          <h1 className="header">Verify your email credentials</h1>
                           <h4 className="head"></h4>
                           <p className="para">
                             Simply scan the following QR code to begin the verification process!
