@@ -74,10 +74,12 @@ function App() {
   const setNotification = useNotification()
 
   // Websocket reference hook
-  const controllerSocket = useRef()
+  const controllerAdminSocket = useRef()
+  const controllerAnonSocket = useRef()
 
   // Used for websocket auto reconnect
-  const [websocket, setWebsocket] = useState(false)
+  const [adminwebsocket, setAdminWebsocket] = useState(false)
+  const [anonwebsocket, setAnonWebsocket] = useState(false)
 
   // State governs whether the app should be loaded. Depends on the loadingArray
   const [appIsLoaded, setAppIsLoaded] = useState(false)
@@ -122,32 +124,34 @@ function App() {
     setPendingVaccinationConnectionID,
   ] = useState('')
 
+  const [emailVerifiedData, setEmailVerifiedData] = useState('')
+
   // (JamesKEbert) Note: We may want to abstract the websockets out into a high-order component for better abstraction, especially potentially with authentication/authorization
 
   // Perform First Time Setup. Connect to Controller Server via Websockets
   
-  // always configure the websocket for 
-  if (! websocket) {
-    let url = new URL('/api/ws', window.location.href)
+  // always configure the anon websocket for Verification
+  if (! anonwebsocket) {
+    let url = new URL('/api/anon/ws', window.location.href)
     url.protocol = url.protocol.replace('http', 'ws')
-    controllerSocket.current = new WebSocket(url.href)
-    setWebsocket(true)
+    controllerAnonSocket.current = new WebSocket(url.href)
+    setAnonWebsocket(true)
 
-    controllerSocket.current.onclose = (event) => {
+    controllerAnonSocket.current.onclose = (event) => {
       // Auto Reopen websocket connection
       // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
 
       setLoggedIn(false)
-      setWebsocket(!websocket)
+      setAnonWebsocket(!anonwebsocket)
     }
 
     // Error Handler
-    controllerSocket.current.onerror = (event) => {
+    controllerAnonSocket.current.onerror = (event) => {
       setNotification('Client Error - Websockets', 'error')
     }
 
     // Receive new message from Controller Server
-    controllerSocket.current.onmessage = (message) => {
+    controllerAnonSocket.current.onmessage = (message) => {
       const parsedMessage = JSON.parse(message.data)
 
       messageHandler(
@@ -160,13 +164,13 @@ function App() {
 
   // Setting up websocket and controllerSocket
   useEffect(() => {
-    if (session && loggedIn && websocket) {
-      let url = new URL('/api/ws', window.location.href)
+    if (session && loggedIn && adminwebsocket) {
+      let url = new URL('/api/admin/ws', window.location.href)
       url.protocol = url.protocol.replace('http', 'ws')
-      controllerSocket.current = new WebSocket(url.href)
-      setWebsocket(true)
+      controllerAdminSocket.current = new WebSocket(url.href)
+      setAdminWebsocket(true)
     }
-  }, [loggedIn, session, websocket])
+  }, [loggedIn, session, adminwebsocket])
 
   // TODO: Setting logged-in user and session states on app mount
   useEffect(() => {
@@ -182,7 +186,7 @@ function App() {
 
         if (cookies.get('sessionId')) {
           setLoggedIn(true)
-          setWebsocket(true)
+          setAdminWebsocket(true)
 
           if (cookies.get('user')) {
             const userCookie = cookies.get('user')
@@ -201,64 +205,64 @@ function App() {
   useEffect(() => {
     // Perform operation on websocket open
     // Run web sockets only if authenticated
-    if (session && loggedIn && websocket) {
-      controllerSocket.current.onopen = () => {
+    if (session && loggedIn && adminwebsocket) {
+      controllerAdminSocket.current.onopen = () => {
         // Resetting state to false to allow spinner while waiting for messages
         setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
 
         // Wait for the roles for come back to start sending messages
         console.log('Ready to send messages')
 
-        sendMessage('SETTINGS', 'GET_THEME', {})
+        sendAdminMessage('SETTINGS', 'GET_THEME', {})
         addLoadingProcess('THEME')
 
         if (
           check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
         ) {
-          sendMessage('CONTACTS', 'GET_ALL', {
+          sendAdminMessage('CONTACTS', 'GET_ALL', {
             additional_tables: ['Demographic', 'Passport'],
           })
           addLoadingProcess('CONTACTS')
         }
 
         if (check(rules, loggedInUserState, 'credentials:read')) {
-          sendMessage('CREDENTIALS', 'GET_ALL', {})
+          sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
           addLoadingProcess('CREDENTIALS')
         }
 
         if (check(rules, loggedInUserState, 'roles:read')) {
-          sendMessage('ROLES', 'GET_ALL', {})
+          sendAdminMessage('ROLES', 'GET_ALL', {})
           addLoadingProcess('ROLES')
         }
 
-        sendMessage('SETTINGS', 'GET_ORGANIZATION_NAME', {})
+        sendAdminMessage('SETTINGS', 'GET_ORGANIZATION_NAME', {})
         addLoadingProcess('ORGANIZATION')
 
-        sendMessage('IMAGES', 'GET_ALL', {})
+        sendAdminMessage('IMAGES', 'GET_ALL', {})
         addLoadingProcess('LOGO')
 
         // This is the example of atuthorizing websockets
         if (check(rules, loggedInUserState, 'users:read')) {
-          sendMessage('USERS', 'GET_ALL', {})
+          sendAdminMessage('USERS', 'GET_ALL', {})
           addLoadingProcess('USERS')
         }
       }
 
-      controllerSocket.current.onclose = (event) => {
+      controllerAdminSocket.current.onclose = (event) => {
         // Auto Reopen websocket connection
         // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
 
         setLoggedIn(false)
-        setWebsocket(!websocket)
+        setAdminWebsocket(!adminwebsocket)
       }
 
       // Error Handler
-      controllerSocket.current.onerror = (event) => {
+      controllerAdminSocket.current.onerror = (event) => {
         setNotification('Client Error - Websockets', 'error')
       }
 
       // Receive new message from Controller Server
-      controllerSocket.current.onmessage = (message) => {
+      controllerAdminSocket.current.onmessage = (message) => {
         const parsedMessage = JSON.parse(message.data)
 
         messageHandler(
@@ -268,21 +272,30 @@ function App() {
         )
       }
     }
-  }, [session, loggedIn, users, user, websocket, image, loggedInUserState]) // (Simon) We have to listen to all 7 to for the app to function properly
-
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+  }, [session, loggedIn, users, user, adminwebsocket, image, loggedInUserState]) // (Simon) We have to listen to all 7 to for the app to function properly
 
   // Send a message to the Controller server
-  function sendMessage(context, type, data = {}) {
-    if (controllerSocket.current.readyState !== controllerSocket.current.OPEN)
+  function sendAnonMessage(context, type, data = {}) {
+    if (controllerAnonSocket.current.readyState !== controllerAnonSocket.current.OPEN)
     {
       setTimeout(function() {
-        sendMessage(context, type, data);
+        sendAnonMessage(context, type, data);
       }, 100);
     } else {
-      controllerSocket.current.send(JSON.stringify({ context, type, data }))
+      controllerAnonSocket.current.send(JSON.stringify({ context, type, data }))
+    }
+  }
+
+
+  // Send a message to the Controller server
+  function sendAdminMessage(context, type, data = {}) {
+    if (controllerAdminSocket.current.readyState !== controllerAdminSocket.current.OPEN)
+    {
+      setTimeout(function() {
+        sendAdminMessage(context, type, data);
+      }, 100);
+    } else {
+      controllerAdminSocket.current.send(JSON.stringify({ context, type, data }))
     }
   }
 
@@ -691,6 +704,15 @@ function App() {
 
               break
 
+            case 'EMAIL_VERIFIED':
+              setPendingVerificationNotice(false)
+
+              setPendingVaccinationConnectionID(data.connection_id)
+
+              setEmailVerifiedData(data.revealed_attrs)
+
+              break
+
             default:
               setNotification(
                 `Error - Unrecognized Websocket Message Type: ${type}`,
@@ -822,7 +844,7 @@ function App() {
 
   // Update theme in the database
   const saveTheme = () => {
-    sendMessage('SETTINGS', 'SET_THEME', theme)
+    sendAdminMessage('SETTINGS', 'SET_THEME', theme)
   }
 
   const addStylesToArray = (key) => {
@@ -891,7 +913,7 @@ function App() {
                         <ForgotPassword
                           logo={image}
                           history={history}
-                          sendRequest={sendMessage}
+                          sendRequest={sendAdminMessage}
                           user={user}
                           users={users}
                         />
@@ -909,7 +931,7 @@ function App() {
                         <PasswordReset
                           logo={image}
                           history={history}
-                          sendRequest={sendMessage}
+                          sendRequest={sendAdminMessage}
                           user={user}
                           users={users}
                         />
@@ -927,7 +949,7 @@ function App() {
                         <AccountSetup
                           logo={image}
                           history={history}
-                          sendRequest={sendMessage}
+                          sendRequest={sendAdminMessage}
                           messageHandler={messageHandler}
                           user={user}
                           users={users}
@@ -947,7 +969,7 @@ function App() {
                           logo={image}
                           history={history}
                           setUpUser={setUpUser}
-                          sendRequest={sendMessage}
+                          sendRequest={sendAdminMessage}
                           setLoggedIn={setLoggedIn}
                         />
                       </Main>
@@ -960,8 +982,9 @@ function App() {
                 render={({ match, history }) => {
                   return (<Root
                     QRCodeURL={QRCodeURL}
-                    sendRequest={sendMessage}
-                    contacts={contacts} />)}}
+                    sendRequest={sendAnonMessage}
+                    contacts={contacts}
+                    emailVerifiedData={emailVerifiedData} />)}}
               />
             </Switch>
           </Router>
@@ -1006,7 +1029,7 @@ function App() {
                         <Main>
                           <Home
                             loggedInUserState={loggedInUserState}
-                            sendRequest={sendMessage}
+                            sendRequest={sendAdminMessage}
                             QRCodeURL={QRCodeURL}
                           />
                         </Main>
@@ -1054,7 +1077,7 @@ function App() {
                           <Contacts
                             loggedInUserState={loggedInUserState}
                             history={history}
-                            sendRequest={sendMessage}
+                            sendRequest={sendAdminMessage}
                             contacts={contacts}
                             QRCodeURL={QRCodeURL}
                           />
@@ -1081,7 +1104,7 @@ function App() {
                           <Contact
                             loggedInUserState={loggedInUserState}
                             history={history}
-                            sendRequest={sendMessage}
+                            sendRequest={sendAdminMessage}
                             contactId={match.params.contactId}
                             contacts={contacts}
                             credentials={credentials}
@@ -1205,7 +1228,7 @@ function App() {
                             successMessage={successMessage}
                             errorMessage={errorMessage}
                             clearResponseState={clearResponseState}
-                            sendRequest={sendMessage}
+                            sendRequest={sendAdminMessage}
                           />
                         </Main>
                       </Frame>
@@ -1261,7 +1284,7 @@ function App() {
                             stylesArray={stylesArray}
                             addStylesToArray={addStylesToArray}
                             removeStylesFromArray={removeStylesFromArray}
-                            sendRequest={sendMessage}
+                            sendRequest={sendAdminMessage}
                           />
                         </Main>
                       </Frame>

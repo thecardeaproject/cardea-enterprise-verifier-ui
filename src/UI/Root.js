@@ -59,33 +59,39 @@ function Root(props) {
                       alt=""
                     />
                   </Col>
-                  {connected ? (
-                    <Col xs="6" className="right-fold">
-                      <h1 className="header">Let us verify your email credentials!</h1>
-                      <h4 className="head"></h4>
-                      <p className="para">
-                        Congratulations!
-                      </p>
-                      <p>
-                        Your email is {props.contacts[0].email}
-                      </p>
-                    </Col>
-                  ) : (
-                    <Col xs="6" className="right-fold">
-                      <h1 className="header">Let us verify your email credentials!</h1>
-                      <h4 className="head"></h4>
-                      <p className="para">
-                        Simply scan the following QR code to begin the process!
-                      </p>
-                      <p>
-                      {props.QRCodeURL ? (
-                          <QR value={props.QRCodeURL} size={256} renderAs="svg" />
-                        ) : (
-                          <span>Loading...</span>
-                        )}
-                      </p>
-                    </Col>
-                  )}
+                  {props.emailVerifiedData ? (
+                      <Col xs="6" className="right-fold">
+                        <h1 className="header">Credentials verified!</h1>
+                        <h4 className="head"></h4>
+                        <p className="para">
+                          Email: {props.emailVerifiedData.address.raw}
+                        </p>
+                    </Col>) : (
+                      connected ? (
+                        <Col xs="6" className="right-fold">
+                          <h1 className="header">Verify your email credentials!</h1>
+                          <h4 className="head"></h4>
+                          <p className="para">
+                            You will now receive a request on your mobile app to send your credential to us!
+                          </p>
+                        </Col>
+                      ) : (
+                        <Col xs="6" className="right-fold">
+                          <h1 className="header">Verify your email credentials!</h1>
+                          <h4 className="head"></h4>
+                          <p className="para">
+                            Simply scan the following QR code to begin the verification process!
+                          </p>
+                          <p>
+                          {props.QRCodeURL ? (
+                              <QR value={props.QRCodeURL} size={256} renderAs="svg" />
+                            ) : (
+                              <span>Loading...</span>
+                            )}
+                          </p>
+                        </Col>
+                      )
+                    )}          
                 </Row>
               </Container>
             </div>
