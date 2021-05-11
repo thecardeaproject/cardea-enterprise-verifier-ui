@@ -28,8 +28,7 @@ function Root(props) {
   }
 
   useEffect(() => { 
-    console.log("here")
-    console.log(props.QRCodeURL)
+
     if (props.QRCodeURL !== "") {
       setWaitingForConnection(true)
     }
