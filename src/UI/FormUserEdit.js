@@ -129,7 +129,7 @@ function FormUserEdit(props) {
       closeOnDocumentClick
       onClose={closeModal}
     >
-      <Modal className="modal">
+      <Modal>
         <ModalHeader>Update User</ModalHeader>
         <ModalContentWrapper>
           <ModalContent>

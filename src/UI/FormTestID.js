@@ -210,7 +210,7 @@ function FormTestID(props) {
       closeOnDocumentClick
       onClose={closeModal}
     >
-      <Modal className="modal">
+      <Modal>
         <ModalHeader>Issue Test ID</ModalHeader>
         <ModalContentWrapper>
           <ModalContent>

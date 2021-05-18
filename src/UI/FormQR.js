@@ -42,7 +42,7 @@ function FormQR(props) {
       closeOnDocumentClick
       onClose={closeModal}
     >
-      <Modal className="modal">
+      <Modal>
         <ModalHeader>Add New Contact</ModalHeader>
         <QRModalContent>
           <QRHolder>

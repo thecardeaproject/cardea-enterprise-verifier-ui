@@ -112,7 +112,7 @@ function FormContacts(props) {
       closeOnDocumentClick
       onClose={closeModal}
     >
-      <Modal className="modal">
+      <Modal>
         <ModalHeader>Edit Contact</ModalHeader>
         <ModalContentWrapper>
           <ModalContent>

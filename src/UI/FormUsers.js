@@ -93,7 +93,7 @@ function FormUsers(props) {
       closeOnDocumentClick
       onClose={closeModal}
     >
-      <Modal className="modal">
+      <Modal>
         <ModalHeader>Create New User</ModalHeader>
         <ModalContentWrapper>
           <ModalContent>

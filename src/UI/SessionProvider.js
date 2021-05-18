@@ -147,7 +147,7 @@ export default function SessionAlertProvider(props) {
 
   sessionAlert = (
     <StyledPopup open={open} closeOnDocumentClick={false} onClose={closeModal}>
-      <Modal className="modal">
+      <Modal>
         <ModalHeader>You've been incative for a while...</ModalHeader>
         <form id="form" onSubmit={handleSubmit}>
           <ModalContent>

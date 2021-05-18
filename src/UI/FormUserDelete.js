@@ -50,7 +50,7 @@ function FormUserDelete(props) {
       closeOnDocumentClick
       onClose={closeModal}
     >
-      <Modal className="modal">
+      <Modal>
         <ModalHeader>Are you sure you want to remove this user?</ModalHeader>
         <ModalContentWrapper>
           <ModalContent>

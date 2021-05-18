@@ -243,7 +243,7 @@ function FormTestResult(props) {
       closeOnDocumentClick
       onClose={closeModal}
     >
-      <Modal className="modal">
+      <Modal>
         <ModalHeader>Issue Test Result</ModalHeader>
         <ModalContentWrapper>
           <ModalContent>
