@@ -1,15 +1,11 @@
 import React, { Component, useEffect, useState } from "react";
 import "./Root.css";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import avatar from "../assets/cardea.png"
 import logo from "../assets/CARDEA-Logo.png"
 import QRCode from 'qrcode.react'
 import styled from 'styled-components'
 
 function Root(props) {
-  console.log("Container ", Container)
 
   const QR = styled(QRCode)`
     display: block;
@@ -40,42 +36,50 @@ function Root(props) {
 
   return (
     <>
-      <div className="container-fluid">
-        <div className="row">
-          <div className="home col s12">
-            <div className="col upper-fold">
+      <div className="landing-container-fluid">
+        <div className="landing-row">
+          <div className="home landing-col s12">
+            <div className="landing-col upper-fold">
               <img
                 src={logo}
                 className="img-fluid"
                 alt=""
               />
-              <Container>
-                <Row>
-                  <Col xs="6" className="left-fold">
+              <div className="landing-container">
+                <div className="landing-row">
+                  <div className="avatar-container left-fold landing-col-6">
                     <img
                       src={avatar}
                       className="avatar"
                       alt=""
                     />
-                  </Col>
+                  </div>
                   {props.emailVerifiedData ? (
-                      <Col xs="6" className="right-fold">
+                      <div className="landing-col-6 right-fold">
                         <h1 className="header">Credentials verified!</h1>
                         <h4 className="head"></h4>
                         <p className="para">
                           Email: {props.emailVerifiedData.address.raw}
                         </p>
-                    </Col>) : (
+                    </div>) : (
                       connected ? (
-                        <Col xs="6" className="right-fold">
+                        <div className="right-fold">
                           <h1 className="header">Verify your email credentials</h1>
                           <h4 className="head"></h4>
                           <p className="para">
                             You will now receive a request on your mobile app to send your credential to us!
                           </p>
-                        </Col>
+                        </div>
                       ) : (
-                        <Col xs="6" className="right-fold">
+                        <div className="right-fold landing-col-6">
+
+                          <div className="avatar-container inline">
+                            <img
+                              src={avatar}
+                              className="avatar"
+                              alt=""
+                            />
+                          </div>
                           <h1 className="header">Verify your email credentials</h1>
                           <h4 className="head"></h4>
                           <p className="para">
@@ -88,11 +92,11 @@ function Root(props) {
                               <span>Loading...</span>
                             )}
                           </p>
-                        </Col>
+                        </div>
                       )
                     )}          
-                </Row>
-              </Container>
+                </div>
+              </div>
             </div>
           </div>
         </div>
