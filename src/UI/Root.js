@@ -55,7 +55,16 @@ function Root(props) {
                     />
                   </div>
                   {props.emailVerifiedData ? (
-                      <div className="landing-col-6 right-fold">
+                      <div className="right-fold landing-col-6">
+
+                        <div className="avatar-container inline">
+                          <img
+                            src={avatar}
+                            className="avatar"
+                            alt=""
+                          />
+                        </div>
+                                              
                         <h1 className="header">Credentials verified!</h1>
                         <h4 className="head"></h4>
                         <p className="para">
@@ -63,7 +72,16 @@ function Root(props) {
                         </p>
                     </div>) : (
                       connected ? (
-                        <div className="right-fold">
+                        <div className="right-fold landing-col-6">
+
+                          <div className="avatar-container inline">
+                            <img
+                              src={avatar}
+                              className="avatar"
+                              alt=""
+                            />
+                          </div>
+
                           <h1 className="header">Verify your email credentials</h1>
                           <h4 className="head"></h4>
                           <p className="para">
