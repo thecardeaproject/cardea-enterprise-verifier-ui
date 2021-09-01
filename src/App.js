@@ -1009,7 +1009,7 @@ function App() {
                         organizationName={organizationName}
                         loggedInUsername={loggedInUsername}
                         handleLogout={handleLogout}
-                        sendMessage={sendMessage}
+                        sendMessage={sendAdminMessage}
                         QRCodeURL={QRCodeURL}
                         loggedInUsername={loggedInUsername}
                         contacts={contacts}
