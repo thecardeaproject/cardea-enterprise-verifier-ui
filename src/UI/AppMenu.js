@@ -66,7 +66,6 @@ function AppMenu(props) {
 
   const [localUser, setLocalUser] = useState(null)
 
-  
   useEffect(() => {
     if (cookies.get('user')) {
       const userCookie = cookies.get('user')

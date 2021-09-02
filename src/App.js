@@ -103,26 +103,16 @@ function App() {
   const [sessionTimer, setSessionTimer] = useState(60)
 
   const [QRCodeURL, setQRCodeURL] = useState('')
-  const [
-    pendingEmployeeConnectionID,
-    setPendingEmployeeConnectionID,
-  ] = useState('')
-  const [pendingVerificationNotice, setPendingVerificationNotice] = useState(
-    false
-  )
-  const [
-    pendingVaccinationConnectionID,
-    setPendingVaccinationConnectionID,
-  ] = useState('')
-
-  const [emailVerifiedData, setEmailVerifiedData] = useState('')
+  const [verificationStatus, setVerificationStatus] = useState()
+  const [verifiedCredential, setVerifiedCredential] = useState('')
+  const [pendingConnectionID, setPendingConnectionID] = useState('')
 
   // (JamesKEbert) Note: We may want to abstract the websockets out into a high-order component for better abstraction, especially potentially with authentication/authorization
 
   // Perform First Time Setup. Connect to Controller Server via Websockets
-  
+
   // always configure the anon websocket for Verification
-  if (! anonwebsocket) {
+  if (!anonwebsocket) {
     let url = new URL('/api/anon/ws', window.location.href)
     url.protocol = url.protocol.replace('http', 'ws')
     controllerAnonSocket.current = new WebSocket(url.href)
@@ -267,26 +257,31 @@ function App() {
 
   // Send a message to the Controller server
   function sendAnonMessage(context, type, data = {}) {
-    if (controllerAnonSocket.current.readyState !== controllerAnonSocket.current.OPEN)
-    {
-      setTimeout(function() {
-        sendAnonMessage(context, type, data);
-      }, 100);
+    if (
+      controllerAnonSocket.current.readyState !==
+      controllerAnonSocket.current.OPEN
+    ) {
+      setTimeout(function () {
+        sendAnonMessage(context, type, data)
+      }, 100)
     } else {
       controllerAnonSocket.current.send(JSON.stringify({ context, type, data }))
     }
   }
 
-
   // Send a message to the Controller server
   function sendAdminMessage(context, type, data = {}) {
-    if (controllerAdminSocket.current.readyState !== controllerAdminSocket.current.OPEN)
-    {
-      setTimeout(function() {
-        sendAdminMessage(context, type, data);
-      }, 100);
+    if (
+      controllerAdminSocket.current.readyState !==
+      controllerAdminSocket.current.OPEN
+    ) {
+      setTimeout(function () {
+        sendAdminMessage(context, type, data)
+      }, 100)
     } else {
-      controllerAdminSocket.current.send(JSON.stringify({ context, type, data }))
+      controllerAdminSocket.current.send(
+        JSON.stringify({ context, type, data })
+      )
     }
   }
 
@@ -320,24 +315,6 @@ function App() {
           switch (type) {
             case 'INVITATION':
               setQRCodeURL(data.invitation_record.invitation_url)
-              break
-
-            case 'SINGLE_USE_USED':
-              if (data.workflow === 'client_employee') {
-                // (mikekebert) Reset the QR code URL (which also closes the QR code modal)
-                setQRCodeURL('')
-                // (mikekebert) Set the pending employee connection_id (which also opens the employee credential form)
-                setPendingEmployeeConnectionID(data.connection_id)
-              }
-              if (data.workflow === 'client_immunization') {
-                // (mikekebert) Reset the QR code URL (which also closes the QR code modal)
-                setQRCodeURL('')
-                // (mikekebert) Open the pending verification notice
-                setPendingVerificationNotice(true)
-              } else {
-                // (mikekebert) Reset the QR code URL (which also closes the QR code modal)
-                setQRCodeURL('')
-              }
               break
 
             case 'INVITATIONS_ERROR':
@@ -631,15 +608,8 @@ function App() {
                 })
                 updatedCredentials.push(newCredential)
                 // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
-                if (
-                  newCredential.connection_id === pendingEmployeeConnectionID
-                ) {
-                  setPendingEmployeeConnectionID('')
-                }
-                if (
-                  newCredential.connection_id === pendingVaccinationConnectionID
-                ) {
-                  setPendingVaccinationConnectionID('')
+                if (newCredential.connection_id === pendingConnectionID) {
+                  setPendingConnectionID('')
                 }
               })
               // (mikekebert) When you reach the end of the list of new credentials, simply add any remaining old credentials to the new array
@@ -686,24 +656,18 @@ function App() {
           break
         case 'PRESENTATIONS':
           switch (type) {
-            case 'EMPLOYEE_VERIFIED':
-              // (mikekebert) Turn off any pending verification notices
-              setPendingVerificationNotice(false)
-
-              // (mikekebert) Set the pending vaccination connection_id (which also opens the immunization credential form)
-              setPendingVaccinationConnectionID(data.connection_id)
+            case 'TRUSTED_TRAVELER_VERIFIED':
+              setPendingConnectionID(data.connection_id)
+              setVerifiedCredential(data.revealed_attrs)
+              setVerificationStatus(true)
 
               break
 
-            case 'EMAIL_VERIFIED':
-              setPendingVerificationNotice(false)
-
-              setPendingVaccinationConnectionID(data.connection_id)
-
-              setEmailVerifiedData(data.revealed_attrs)
+            case 'VERIFICATION_FAILED':
+              setVerifiedCredential('')
+              setVerificationStatus(false)
 
               break
-
             default:
               setNotification(
                 `Error - Unrecognized Websocket Message Type: ${type}`,
@@ -882,7 +846,6 @@ function App() {
     }
   }
 
-
   if ((loggedIn && !appIsLoaded) || (!loggedIn && !appIsLoaded)) {
     // Show the spinner while the app is loading
     return (
@@ -973,17 +936,22 @@ function App() {
                 path="/"
                 exact
                 render={() => {
-                  return (<Root
-                    QRCodeURL={QRCodeURL}
-                    sendRequest={sendAnonMessage}
-                    contacts={contacts}
-                    emailVerifiedData={emailVerifiedData} />)}}
+                  return (
+                    <Root
+                      QRCodeURL={QRCodeURL}
+                      sendRequest={sendAnonMessage}
+                      contacts={contacts}
+                      verificationStatus={verificationStatus}
+                      verifiedCredential={verifiedCredential}
+                    />
+                  )
+                }}
               />
               <Route exact path="/admin">
-                  <Redirect to="/admin/login" />
+                <Redirect to="/admin/login" />
               </Route>
               <Route path="/:any">
-                  <Redirect to="/" />
+                <Redirect to="/" />
               </Route>
             </Switch>
           </Router>
@@ -993,7 +961,6 @@ function App() {
   } else {
     // loggedIn and appIsLoaded
     return (
-
       <ThemeProvider theme={theme}>
         <NotificationProvider>
           <SessionProvider logout={handleLogout} sessionTimer={sessionTimer}>
@@ -1003,7 +970,7 @@ function App() {
                   path="/admin"
                   render={() => {
                     return (
-                      <AdminRoute 
+                      <AdminRoute
                         loggedInUserState={loggedInUserState}
                         image={image}
                         organizationName={organizationName}

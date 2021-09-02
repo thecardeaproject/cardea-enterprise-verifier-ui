@@ -13,7 +13,6 @@ import User from '../UI/User'
 import Users from '../UI/Users'
 import Settings from '../UI/Settings'
 
-
 const Frame = styled.div`
   display: flex;
   flex-direction: row;
@@ -25,7 +24,6 @@ const Main = styled.main`
 `
 
 function AdminRoutes(props) {
-
   const { path } = useRouteMatch()
 
   return (
@@ -162,7 +160,10 @@ function AdminRoutes(props) {
                   handleLogout={props.handleLogout}
                 />
                 <Main>
-                  <Credentials history={history} credentials={props.credentials} />
+                  <Credentials
+                    history={history}
+                    credentials={props.credentials}
+                  />
                 </Main>
               </Frame>
             )
