@@ -1,7 +1,7 @@
-import React, { Component, useEffect, useState } from "react";
-import "./Root.css";
-import avatar from "../assets/cardea.png"
-import logo from "../assets/CARDEA-Logo.png"
+import React, { Component, useEffect, useState } from 'react'
+import './Root.css'
+import avatar from '../assets/cardea.png'
+import logo from '../assets/CARDEA-Logo.png'
 import QRCode from 'qrcode.react'
 import styled from 'styled-components'
 
