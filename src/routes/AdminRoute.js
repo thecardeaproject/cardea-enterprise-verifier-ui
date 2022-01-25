@@ -29,6 +29,7 @@ function AdminRoutes(props) {
   const loggedInUserState = props.loggedInUserState
   const rules = props.rules
   const check = props.check
+  const schemas = props.schemas
 
   return (
     <>
@@ -151,6 +152,7 @@ function AdminRoutes(props) {
                       contactId={match.params.contactId}
                       contacts={props.contacts}
                       credentials={props.credentials}
+                      schemas={schemas}
                     />
                   </Main>
                 </Frame>
