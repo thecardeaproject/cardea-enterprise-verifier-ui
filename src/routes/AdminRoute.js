@@ -26,6 +26,11 @@ const Main = styled.main`
 function AdminRoutes(props) {
   const { path } = useRouteMatch()
 
+  const loggedInUserState = props.loggedInUserState
+  const rules = props.rules
+  const check = props.check
+  const schemas = props.schemas
+
   return (
     <>
       <Switch>
@@ -70,126 +75,147 @@ function AdminRoutes(props) {
         <Route
           path={`${path}/invitations`}
           render={({ match, history }) => {
-            return (
-              <Frame id="app-frame">
-                <AppHeader
-                  loggedInUserState={props.loggedInUserState}
-                  loggedInUsername={props.loggedInUsername}
-                  logo={props.image}
-                  organizationName={props.organizationName}
-                  match={match}
-                  history={history}
-                  handleLogout={props.handleLogout}
-                />
-                <Main>
-                  <p>Invitations</p>
-                </Main>
-              </Frame>
-            )
+            if (check(rules, loggedInUserState, 'invitations:read')) {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader
+                    loggedInUserState={props.loggedInUserState}
+                    loggedInUsername={props.loggedInUsername}
+                    logo={props.image}
+                    organizationName={props.organizationName}
+                    match={match}
+                    history={history}
+                    handleLogout={props.handleLogout}
+                  />
+                  <Main>
+                    <p>Invitations</p>
+                  </Main>
+                </Frame>
+              )
+            } else {
+              return <Route render={() => <Redirect to="/" />} />
+            }
           }}
         />
         <Route
           path={`${path}/contacts`}
           exact
           render={({ match, history }) => {
-            return (
-              <Frame id="app-frame">
-                <AppHeader
-                  loggedInUserState={props.loggedInUserState}
-                  loggedInUsername={props.loggedInUsername}
-                  logo={props.image}
-                  organizationName={props.organizationName}
-                  match={match}
-                  history={history}
-                  handleLogout={props.handleLogout}
-                />
-                <Main>
-                  <Contacts
+            if (check(rules, loggedInUserState, 'contacts:read')) {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader
                     loggedInUserState={props.loggedInUserState}
+                    loggedInUsername={props.loggedInUsername}
+                    logo={props.image}
+                    organizationName={props.organizationName}
+                    match={match}
                     history={history}
-                    sendRequest={props.sendMessage}
-                    contacts={props.contacts}
-                    QRCodeURL={props.QRCodeURL}
+                    handleLogout={props.handleLogout}
                   />
-                </Main>
-              </Frame>
-            )
+                  <Main>
+                    <Contacts
+                      loggedInUserState={props.loggedInUserState}
+                      history={history}
+                      sendRequest={props.sendMessage}
+                      contacts={props.contacts}
+                      QRCodeURL={props.QRCodeURL}
+                    />
+                  </Main>
+                </Frame>
+              )
+            } else {
+              return <Route render={() => <Redirect to="/" />} />
+            }
           }}
         />
         <Route
           path={`${path}/contacts/:contactId`}
           render={({ match, history }) => {
-            return (
-              <Frame id="app-frame">
-                <AppHeader
-                  loggedInUserState={props.loggedInUserState}
-                  loggedInUsername={props.loggedInUsername}
-                  logo={props.image}
-                  organizationName={props.organizationName}
-                  match={match}
-                  history={history}
-                  handleLogout={props.handleLogout}
-                />
-                <Main>
-                  <Contact
+            if (check(rules, loggedInUserState, 'contacts:read')) {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader
                     loggedInUserState={props.loggedInUserState}
+                    loggedInUsername={props.loggedInUsername}
+                    logo={props.image}
+                    organizationName={props.organizationName}
+                    match={match}
                     history={history}
-                    sendRequest={props.sendMessage}
-                    contactId={match.params.contactId}
-                    contacts={props.contacts}
-                    credentials={props.credentials}
+                    handleLogout={props.handleLogout}
                   />
-                </Main>
-              </Frame>
-            )
+                  <Main>
+                    <Contact
+                      loggedInUserState={props.loggedInUserState}
+                      history={history}
+                      sendRequest={props.sendMessage}
+                      contactId={match.params.contactId}
+                      contacts={props.contacts}
+                      credentials={props.credentials}
+                      schemas={schemas}
+                    />
+                  </Main>
+                </Frame>
+              )
+            } else {
+              return <Route render={() => <Redirect to="/" />} />
+            }
           }}
         />
         <Route
           path={`${path}/credentials`}
           exact
           render={({ match, history }) => {
-            return (
-              <Frame id="app-frame">
-                <AppHeader
-                  loggedInUserState={props.loggedInUserState}
-                  loggedInUsername={props.loggedInUsername}
-                  logo={props.image}
-                  organizationName={props.organizationName}
-                  match={match}
-                  history={history}
-                  handleLogout={props.handleLogout}
-                />
-                <Main>
-                  <Credentials
+            if (check(rules, loggedInUserState, 'credentials:read')) {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader
+                    loggedInUserState={props.loggedInUserState}
+                    loggedInUsername={props.loggedInUsername}
+                    logo={props.image}
+                    organizationName={props.organizationName}
+                    match={match}
                     history={history}
-                    credentials={props.credentials}
+                    handleLogout={props.handleLogout}
                   />
-                </Main>
-              </Frame>
-            )
+                  <Main>
+                    <Credentials
+                      history={history}
+                      credentials={props.credentials}
+                    />
+                  </Main>
+                </Frame>
+              )
+            } else {
+              return <Route render={() => <Redirect to="/" />} />
+            }
           }}
         />
         <Route
           path={`${path}/credentials/:credentialId`}
           render={({ match, history }) => {
-            return (
-              <Frame id="app-frame">
-                <AppHeader
-                  loggedInUserState={props.loggedInUserState}
-                  loggedInUsername={props.loggedInUsername}
-                  logo={props.image}
-                  organizationName={props.organizationName}
-                  match={match}
-                />
-                <Main>
-                  <Credential
-                    history={history}
-                    credential={match.params.credentialId}
-                    credentials={props.credentials}
+            if (check(rules, loggedInUserState, 'credentials:read')) {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader
+                    loggedInUserState={props.loggedInUserState}
+                    loggedInUsername={props.loggedInUsername}
+                    logo={props.image}
+                    organizationName={props.organizationName}
+                    match={match}
                   />
-                </Main>
-              </Frame>
-            )
+                  <Main>
+                    <Credential
+                      history={history}
+                      credential={match.params.credentialId}
+                      credentials={props.credentials}
+                    />
+                  </Main>
+                </Frame>
+              )
+            } else {
+              return <Route render={() => <Redirect to="/" />} />
+            }
           }}
           credentials={props.credentials}
         />
@@ -238,31 +264,35 @@ function AdminRoutes(props) {
         <Route
           path={`${path}/users`}
           render={({ match, history }) => {
-            return (
-              <Frame id="app-frame">
-                <AppHeader
-                  loggedInUserState={props.loggedInUserState}
-                  loggedInUsername={props.loggedInUsername}
-                  logo={props.image}
-                  organizationName={props.organizationName}
-                  match={match}
-                  history={history}
-                  handleLogout={props.handleLogout}
-                />
-                <Main>
-                  <Users
+            if (check(rules, loggedInUserState, 'users:read')) {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader
                     loggedInUserState={props.loggedInUserState}
-                    roles={props.roles}
-                    users={props.users}
-                    user={props.user}
-                    successMessage={props.successMessage}
-                    errorMessage={props.errorMessage}
-                    clearResponseState={props.clearResponseState}
-                    sendRequest={props.sendMessage}
+                    loggedInUsername={props.loggedInUsername}
+                    logo={props.image}
+                    organizationName={props.organizationName}
+                    match={match}
+                    history={history}
+                    handleLogout={props.handleLogout}
                   />
-                </Main>
-              </Frame>
-            )
+                  <Main>
+                    <Users
+                      loggedInUserState={props.loggedInUserState}
+                      roles={props.roles}
+                      users={props.users}
+                      user={props.user}
+                      successMessage={props.successMessage}
+                      errorMessage={props.errorMessage}
+                      clearResponseState={props.clearResponseState}
+                      sendRequest={props.sendMessage}
+                    />
+                  </Main>
+                </Frame>
+              )
+            } else {
+              return <Route render={() => <Redirect to="/" />} />
+            }
           }}
         />
         <Route
@@ -291,34 +321,38 @@ function AdminRoutes(props) {
         <Route
           path={`${path}/settings`}
           render={({ match, history }) => {
-            return (
-              <Frame id="app-frame">
-                <AppHeader
-                  loggedInUserState={props.loggedInUserState}
-                  loggedInUsername={props.loggedInUsername}
-                  logo={props.image}
-                  organizationName={props.organizationName}
-                  match={match}
-                  history={history}
-                  handleLogout={props.handleLogout}
-                />
-                <Main>
-                  <Settings
-                    updateTheme={props.updateTheme}
-                    saveTheme={props.saveTheme}
-                    undoStyle={props.undoStyle}
-                    errorMessage={props.errorMessage}
-                    successMessage={props.successMessage}
-                    clearResponseState={props.clearResponseState}
-                    imageResponse={props.image}
-                    stylesArray={props.stylesArray}
-                    addStylesToArray={props.addStylesToArray}
-                    removeStylesFromArray={props.removeStylesFromArray}
-                    sendRequest={props.sendMessage}
+            if (check(rules, loggedInUserState, 'settings:update')) {
+              return (
+                <Frame id="app-frame">
+                  <AppHeader
+                    loggedInUserState={props.loggedInUserState}
+                    loggedInUsername={props.loggedInUsername}
+                    logo={props.image}
+                    organizationName={props.organizationName}
+                    match={match}
+                    history={history}
+                    handleLogout={props.handleLogout}
                   />
-                </Main>
-              </Frame>
-            )
+                  <Main>
+                    <Settings
+                      updateTheme={props.updateTheme}
+                      saveTheme={props.saveTheme}
+                      undoStyle={props.undoStyle}
+                      errorMessage={props.errorMessage}
+                      successMessage={props.successMessage}
+                      clearResponseState={props.clearResponseState}
+                      imageResponse={props.image}
+                      stylesArray={props.stylesArray}
+                      addStylesToArray={props.addStylesToArray}
+                      removeStylesFromArray={props.removeStylesFromArray}
+                      sendRequest={props.sendMessage}
+                    />
+                  </Main>
+                </Frame>
+              )
+            } else {
+              return <Route render={() => <Redirect to="/" />} />
+            }
           }}
         />
         {/* Redirect to root if no route match is found */}
