@@ -260,6 +260,49 @@ function App() {
           parsedMessage.data
         )
       }
+    }  else {
+      controllerAnonSocket.current.onopen = () => {
+        // Resetting state to false to allow spinner while waiting for messages
+        setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
+
+        // Wait for the roles for come back to start sending messages
+        console.log('Ready to send messages')
+
+        // sendAnonMessage('SETTINGS', 'GET_THEME', {})
+        // addLoadingProcess('THEME')
+        sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
+        addLoadingProcess('SCHEMAS')
+
+        sendAnonMessage('SETTINGS', 'GET_ORGANIZATION', {})
+        addLoadingProcess('ORGANIZATION')
+
+        sendAnonMessage('IMAGES', 'GET_ALL', {})
+        addLoadingProcess('LOGO')
+      }
+
+      controllerAnonSocket.current.onclose = (event) => {
+        // Auto Reopen websocket connection
+        // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
+
+        setLoggedIn(false)
+        setAdminWebsocket(!adminwebsocket)
+      }
+
+      // Error Handler
+      controllerAnonSocket.current.onerror = (event) => {
+        setNotification('Client Error - Websockets', 'error')
+      }
+
+      // Receive new message from Controller Server
+      controllerAnonSocket.current.onmessage = (message) => {
+        const parsedMessage = JSON.parse(message.data)
+
+        messageHandler(
+          parsedMessage.context,
+          parsedMessage.type,
+          parsedMessage.data
+        )
+      }
     }
   }, [session, loggedIn, users, user, adminwebsocket, image, loggedInUserState]) // (Eldersonar) We have to listen to all 7 to for the app to function properly
 
