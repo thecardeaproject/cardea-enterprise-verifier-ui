@@ -404,6 +404,7 @@ function AdminRoutes(props) {
                       addStylesToArray={props.addStylesToArray}
                       removeStylesFromArray={props.removeStylesFromArray}
                       sendRequest={props.sendMessage}
+                      smtp={props.smtp}
                     />
                   </Main>
                 </Frame>

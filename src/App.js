@@ -93,6 +93,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
   const [organizationName, setOrganizationName] = useState(null)
+  const [smtp, setSmtp] = useState(null)
 
   const [siteTitle, setSiteTitle] = useState('')
 
@@ -241,6 +242,11 @@ function App() {
 
         sendAdminMessage('SETTINGS', 'GET_ORGANIZATION', {})
         addLoadingProcess('ORGANIZATION')
+
+        if (check(rules, loggedInUserState, 'settings:update')) {
+          sendAdminMessage('SETTINGS', 'GET_SMTP', {})
+          addLoadingProcess('SMTP')
+        }
 
         sendAdminMessage('IMAGES', 'GET_ALL', {})
         addLoadingProcess('LOGO')
@@ -639,7 +645,7 @@ function App() {
                     oldCredential !== null &&
                     newCredential !== null &&
                     oldCredential.credential_exchange_id ===
-                      newCredential.credential_exchange_id
+                    newCredential.credential_exchange_id
                   ) {
                     // (mikekebert) If you find a match, delete the old copy from the old array
                     oldCredentials.splice(index, 1)
@@ -706,7 +712,7 @@ function App() {
                     oldPresentation !== null &&
                     newPresentation !== null &&
                     oldPresentation.presentation_exchange_id ===
-                      newPresentation.presentation_exchange_id
+                    newPresentation.presentation_exchange_id
                   ) {
                     // (mikekebert) If you find a match, delete the old copy from the old array
                     console.log('splice', oldPresentation)
@@ -767,6 +773,11 @@ function App() {
               setOrganizationName(data.companyName)
               setSiteTitle(data.title)
               removeLoadingProcess('ORGANIZATION')
+              break
+
+            case 'SETTINGS_SMTP':
+              setSmtp(data.value)
+              removeLoadingProcess('SMTP')
               break
 
             case 'SETTINGS_ERROR':
@@ -1084,6 +1095,7 @@ function App() {
                         addStylesToArray={addStylesToArray}
                         removeStylesFromArray={removeStylesFromArray}
                         presentationReports={presentationReports}
+                        smtp={smtp}
                       />
                     )
                   }}
