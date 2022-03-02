@@ -409,36 +409,16 @@ function App() {
           }
           break
 
-        case 'DEMOGRAPHICS':
+        case 'OUT_OF_BAND':
           switch (type) {
-            case 'DEMOGRAPHICS_ERROR':
-              console.log(data.error)
-              console.log('DEMOGRAPHICS ERROR')
-              setErrorMessage(data.error)
+            case 'INVITATION':
+              setQRCodeURL(data.invitation_record)
 
               break
 
-            case 'CONTACTS_ERROR':
+            case 'INVITATIONS_ERROR':
               console.log(data.error)
-              console.log('CONTACTS ERROR')
-              setErrorMessage(data.error)
-
-              break
-
-            default:
-              setNotification(
-                `Error - Unrecognized Websocket Message Type: ${type}`,
-                'error'
-              )
-              break
-          }
-          break
-
-        case 'DEMOGRAPHICS':
-          switch (type) {
-            case 'DEMOGRAPHICS_ERROR':
-              console.log(data.error)
-              console.log('DEMOGRAPHICS ERROR')
+              console.log('Invitations Error')
               setErrorMessage(data.error)
 
               break
