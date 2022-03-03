@@ -9,6 +9,7 @@ This software project includes the following third-party or open-source tools, c
 See also: https://mit-license.org/
 
 - [Axios](https://github.com/axios/axios)
+- [base64url](https://github.com/brianloveswords/base64url)
 - [Prettier](https://github.com/prettier/prettier)
 - [React Router](https://github.com/ReactTraining/react-router)
 - [Reactjs-popup](https://github.com/yjose/reactjs-popup)
