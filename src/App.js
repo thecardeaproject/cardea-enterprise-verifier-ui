@@ -726,39 +726,40 @@ function App() {
               let newPresentations = data.presentation_reports
               let updatedPresentations = []
 
-              // (mikekebert) Loop through the new presentation and check them against the existing array
-              newPresentations.forEach((newPresentation) => {
-                oldPresentations.forEach((oldPresentation, index) => {
-                  if (
-                    oldPresentation !== null &&
-                    newPresentation !== null &&
-                    oldPresentation.presentation_exchange_id ===
-                    newPresentation.presentation_exchange_id
-                  ) {
-                    // (mikekebert) If you find a match, delete the old copy from the old array
-                    console.log('splice', oldPresentation)
-                    oldPresentations.splice(index, 1)
+                // (mikekebert) Loop through the new presentation and check them against the existing array
+                newPresentations.forEach((newPresentation) => {
+                  oldPresentations.forEach((oldPresentation, index) => {
+                    if (
+                      oldPresentation !== null &&
+                      newPresentation !== null &&
+                      oldPresentation.presentation_exchange_id ===
+                      newPresentation.presentation_exchange_id
+                    ) {
+                      // (mikekebert) If you find a match, delete the old copy from the old array
+                      console.log('splice', oldPresentation)
+                      oldPresentations.splice(index, 1)
+                    }
+                  })
+                  updatedPresentations.push(newPresentation)
+                  // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
+                  if (newPresentation.connection_id === pendingConnectionID) {
+                    setPendingConnectionID('')
                   }
                 })
-                updatedPresentations.push(newPresentation)
-                // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
-                if (newPresentation.connection_id === pendingConnectionID) {
-                  setPendingConnectionID('')
-                }
-              })
-              // (mikekebert) When you reach the end of the list of new presentations, simply add any remaining old presentations to the new array
-              if (oldPresentations.length > 0)
-                updatedPresentations = [
-                  ...updatedPresentations,
-                  ...oldPresentations,
-                ]
-              // (mikekebert) Sort the array by date created, newest on top
-              updatedPresentations.sort((a, b) =>
-                a.created_at < b.created_at ? 1 : -1
-              )
+                // (mikekebert) When you reach the end of the list of new presentations, simply add any remaining old presentations to the new array
+                if (oldPresentations.length > 0)
+                  updatedPresentations = [
+                    ...updatedPresentations,
+                    ...oldPresentations,
+                  ]
+                // (mikekebert) Sort the array by date created, newest on top
+                updatedPresentations.sort((a, b) =>
+                  a.created_at < b.created_at ? 1 : -1
+                )
+  
+                setPresentationReports(updatedPresentations)
+                removeLoadingProcess('PRESENTATIONS')
 
-              setPresentationReports(updatedPresentations)
-              removeLoadingProcess('PRESENTATIONS')
               break
             default:
               setNotification(
