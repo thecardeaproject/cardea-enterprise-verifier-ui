@@ -35,6 +35,7 @@ function AdminRoutes(props) {
   const rules = props.rules
   const check = props.check
   const schemas = props.schemas
+  const privileges = props.privileges
 
   return (
     <>
@@ -70,6 +71,10 @@ function AdminRoutes(props) {
                   <Home
                     loggedInUserState={loggedInUserState}
                     sendRequest={props.sendMessage}
+                    successMessage={props.successMessage}
+                    errorMessage={props.errorMessage}
+                    clearResponseState={props.clearResponseState}
+                    privileges={privileges}
                     QRCodeURL={props.QRCodeURL}
                   />
                 </Main>

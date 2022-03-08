@@ -97,6 +97,8 @@ function App() {
 
   const [siteTitle, setSiteTitle] = useState('')
 
+  const [privileges, setPrivileges] = useState([])
+
   // session states
   const [session, setSession] = useState('')
   const [loggedInUserId, setLoggedInUserId] = useState('')
@@ -157,16 +159,6 @@ function App() {
     }
   }, [loggedIn, session, adminwebsocket])
 
-  // Setting up websocket and controllerSocket
-  useEffect(() => {
-    if (session && loggedIn && adminwebsocket) {
-      let url = new URL('/api/admin/ws', window.location.href)
-      url.protocol = url.protocol.replace('http', 'ws')
-      controllerAdminSocket.current = new WebSocket(url.href)
-      setAdminWebsocket(true)
-    }
-  }, [loggedIn, session, adminwebsocket])
-
   // TODO: Setting logged-in user and session states on app mount
   useEffect(() => {
     Axios({
@@ -210,52 +202,53 @@ function App() {
 
         // Wait for the roles for come back to start sending messages
         // console.log('Ready to send messages')
+        setTimeout(() => {
+          sendAdminMessage('SETTINGS', 'GET_THEME', {})
+          addLoadingProcess('THEME')
+          sendAdminMessage('SETTINGS', 'GET_SCHEMAS', {})
+          addLoadingProcess('SCHEMAS')
 
-        sendAdminMessage('SETTINGS', 'GET_THEME', {})
-        addLoadingProcess('THEME')
-        sendAdminMessage('SETTINGS', 'GET_SCHEMAS', {})
-        addLoadingProcess('SCHEMAS')
+          if (
+            check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
+          ) {
+            sendAdminMessage('CONTACTS', 'GET_ALL', {
+              additional_tables: ['Demographic', 'Passport'],
+            })
+            addLoadingProcess('CONTACTS')
+          }
 
-        if (
-          check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
-        ) {
-          sendAdminMessage('CONTACTS', 'GET_ALL', {
-            additional_tables: ['Demographic', 'Passport'],
-          })
-          addLoadingProcess('CONTACTS')
-        }
+          if (check(rules, loggedInUserState, 'credentials:read')) {
+            sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
+            addLoadingProcess('CREDENTIALS')
+          }
 
-        if (check(rules, loggedInUserState, 'credentials:read')) {
-          sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
-          addLoadingProcess('CREDENTIALS')
-        }
+          if (check(rules, loggedInUserState, 'presentations:read')) {
+            sendAdminMessage('PRESENTATIONS', 'GET_ALL', {})
+            addLoadingProcess('PRESENTATIONS')
+          }
 
-        if (check(rules, loggedInUserState, 'presentations:read')) {
-          sendAdminMessage('PRESENTATIONS', 'GET_ALL', {})
-          addLoadingProcess('PRESENTATIONS')
-        }
+          if (check(rules, loggedInUserState, 'roles:read')) {
+            sendAdminMessage('ROLES', 'GET_ALL', {})
+            addLoadingProcess('ROLES')
+          }
 
-        if (check(rules, loggedInUserState, 'roles:read')) {
-          sendAdminMessage('ROLES', 'GET_ALL', {})
-          addLoadingProcess('ROLES')
-        }
+          sendAdminMessage('SETTINGS', 'GET_ORGANIZATION', {})
+          addLoadingProcess('ORGANIZATION')
 
-        sendAdminMessage('SETTINGS', 'GET_ORGANIZATION', {})
-        addLoadingProcess('ORGANIZATION')
+          if (check(rules, loggedInUserState, 'settings:update')) {
+            sendAdminMessage('SETTINGS', 'GET_SMTP', {})
+            addLoadingProcess('SMTP')
+          }
 
-        if (check(rules, loggedInUserState, 'settings:update')) {
-          sendAdminMessage('SETTINGS', 'GET_SMTP', {})
-          addLoadingProcess('SMTP')
-        }
+          sendAdminMessage('IMAGES', 'GET_ALL', {})
+          addLoadingProcess('LOGO')
 
-        sendAdminMessage('IMAGES', 'GET_ALL', {})
-        addLoadingProcess('LOGO')
-
-        // This is the example of atuthorizing websockets
-        if (check(rules, loggedInUserState, 'users:read')) {
-          sendAdminMessage('USERS', 'GET_ALL', {})
-          addLoadingProcess('USERS')
-        }
+          // This is the example of atuthorizing websockets
+          if (check(rules, loggedInUserState, 'users:read')) {
+            sendAdminMessage('USERS', 'GET_ALL', {})
+            addLoadingProcess('USERS')
+          }
+        }, 1000)
       }
 
       controllerAdminSocket.current.onclose = (event) => {
@@ -281,24 +274,24 @@ function App() {
           parsedMessage.data
         )
       }
-    } else {
+    } else if (!session && !loggedIn && anonwebsocket) {
       controllerAnonSocket.current.onopen = () => {
         // Resetting state to false to allow spinner while waiting for messages
         setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
 
         // Wait for the roles for come back to start sending messages
-        console.log('Ready to send messages')
+        setTimeout(() => {
+          sendAnonMessage('SETTINGS', 'GET_THEME', {})
+          addLoadingProcess('THEME')
+          sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
+          addLoadingProcess('SCHEMAS')
 
-        sendAnonMessage('SETTINGS', 'GET_THEME', {})
-        addLoadingProcess('THEME')
-        sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
-        addLoadingProcess('SCHEMAS')
+          sendAnonMessage('SETTINGS', 'GET_ORGANIZATION', {})
+          addLoadingProcess('ORGANIZATION')
 
-        sendAnonMessage('SETTINGS', 'GET_ORGANIZATION', {})
-        addLoadingProcess('ORGANIZATION')
-
-        sendAnonMessage('IMAGES', 'GET_ALL', {})
-        addLoadingProcess('LOGO')
+          sendAnonMessage('IMAGES', 'GET_ALL', {})
+          addLoadingProcess('LOGO')
+        }, 1000)
       }
 
       controllerAnonSocket.current.onclose = (event) => {
@@ -345,12 +338,6 @@ function App() {
     } else {
       controllerAnonSocket.current.send(JSON.stringify({ context, type, data }))
     }
-  }
-
-  // (eldersonar) Shut down the websocket
-  function closeWSConnection(code, reason) {
-    controllerAdminSocket.current.close(code, reason)
-    // console.log(controllerSocket.current)
   }
 
   // Send a message to the Controller server
@@ -858,6 +845,30 @@ function App() {
           }
           break
 
+        case 'GOVERNANCE':
+          switch (type) {
+            case 'PRIVILEGES_ERROR':
+              console.log(data)
+              console.log('Privileges Error', data.error)
+              setErrorMessage(data.error)
+              break
+
+            case 'PRIVILEGES_SUCCESS':
+              console.log('PRIVILEGES SUCCESS')
+              console.log('these are the privileges:')
+              console.log(data.privileges)
+              setPrivileges(data.privileges)
+              break
+
+            default:
+              setNotification(
+                `Error - Unrecognized Websocket Message Type: ${type}`,
+                'error'
+              )
+              break
+          }
+          break
+
         default:
           setNotification(
             `Error - Unrecognized Websocket Message Type: ${context}`,
@@ -1096,6 +1107,7 @@ function App() {
                         check={check}
                         schemas={schemas}
                         image={image}
+                        privileges={privileges}
                         organizationName={organizationName}
                         loggedInUsername={loggedInUsername}
                         handleLogout={handleLogout}
