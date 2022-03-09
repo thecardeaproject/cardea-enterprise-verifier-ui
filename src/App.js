@@ -26,7 +26,6 @@ import {
   NotificationProvider,
 } from './UI/NotificationProvider'
 import PasswordReset from './UI/PasswordReset'
-
 import SessionProvider from './UI/SessionProvider'
 
 import './App.css'
@@ -78,6 +77,7 @@ function App() {
   // Check for local state copy of theme, otherwise use default hard coded here in App.js
   const localTheme = JSON.parse(localStorage.getItem('recentTheme'))
   const [theme, setTheme] = useState(localTheme ? localTheme : defaultTheme)
+  const [schemas, setSchemas] = useState({})
 
   // Styles to change array
   const [stylesArray, setStylesArray] = useState([])
@@ -85,6 +85,7 @@ function App() {
   // Message states
   const [contacts, setContacts] = useState([])
   const [credentials, setCredentials] = useState([])
+  const [presentationReports, setPresentationReports] = useState([])
   const [image, setImage] = useState()
   const [roles, setRoles] = useState([])
   const [users, setUsers] = useState([])
@@ -92,6 +93,11 @@ function App() {
   const [errorMessage, setErrorMessage] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
   const [organizationName, setOrganizationName] = useState(null)
+  const [smtp, setSmtp] = useState(null)
+
+  const [siteTitle, setSiteTitle] = useState('')
+
+  const [privileges, setPrivileges] = useState([])
 
   // session states
   const [session, setSession] = useState('')
@@ -155,32 +161,35 @@ function App() {
 
   // TODO: Setting logged-in user and session states on app mount
   useEffect(() => {
-    console.log('refreshed')
-
     Axios({
       method: 'GET',
-      url: '/api/session',
-    }).then((res) => {
-      console.log(res)
-      if (res.status) {
-        setSession(cookies.get('sessionId')) // Check for a session and then set up the session state based on what we found
+      url: '/api/renew-session',
+    })
+      .then((res) => {
+        // console.log(res)
 
         if (cookies.get('sessionId')) {
+          // Update session expiration date
+          setSession(cookies.get('sessionId'))
           setLoggedIn(true)
           setAdminWebsocket(true)
 
-          if (cookies.get('user')) {
-            const userCookie = cookies.get('user')
-            setLoggedInUserState(userCookie)
-            setLoggedInUserId(userCookie.id)
-            setLoggedInUsername(userCookie.username)
-            console.log(userCookie.roles)
-            setLoggedInRoles(userCookie.roles)
-          } else setAppIsLoaded(true)
+          setLoggedInUserState(res.data)
+          setLoggedInUserId(res.data.id)
+          setLoggedInUsername(res.data.username)
+          setLoggedInRoles(res.data.roles)
         } else setAppIsLoaded(true)
-      }
-    })
+      })
+      .catch((error) => {
+        // Unauthorized
+        setAppIsLoaded(true)
+      })
   }, [loggedIn])
+
+  // (eldersonar) Set-up site title. What about SEO? Will robots be able to read it?
+  useEffect(() => {
+    document.title = siteTitle
+  }, [siteTitle])
 
   // Define Websocket event listeners
   useEffect(() => {
@@ -192,41 +201,54 @@ function App() {
         setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
 
         // Wait for the roles for come back to start sending messages
-        console.log('Ready to send messages')
+        // console.log('Ready to send messages')
+        setTimeout(() => {
+          sendAdminMessage('SETTINGS', 'GET_THEME', {})
+          addLoadingProcess('THEME')
+          sendAdminMessage('SETTINGS', 'GET_SCHEMAS', {})
+          addLoadingProcess('SCHEMAS')
 
-        sendAdminMessage('SETTINGS', 'GET_THEME', {})
-        addLoadingProcess('THEME')
+          if (
+            check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
+          ) {
+            sendAdminMessage('CONTACTS', 'GET_ALL', {
+              additional_tables: ['Demographic', 'Passport'],
+            })
+            addLoadingProcess('CONTACTS')
+          }
 
-        if (
-          check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
-        ) {
-          sendAdminMessage('CONTACTS', 'GET_ALL', {
-            additional_tables: ['Demographic', 'Passport'],
-          })
-          addLoadingProcess('CONTACTS')
-        }
+          if (check(rules, loggedInUserState, 'credentials:read')) {
+            sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
+            addLoadingProcess('CREDENTIALS')
+          }
 
-        if (check(rules, loggedInUserState, 'credentials:read')) {
-          sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
-          addLoadingProcess('CREDENTIALS')
-        }
+          if (check(rules, loggedInUserState, 'presentations:read')) {
+            sendAdminMessage('PRESENTATIONS', 'GET_ALL', {})
+            addLoadingProcess('PRESENTATIONS')
+          }
 
-        if (check(rules, loggedInUserState, 'roles:read')) {
-          sendAdminMessage('ROLES', 'GET_ALL', {})
-          addLoadingProcess('ROLES')
-        }
+          if (check(rules, loggedInUserState, 'roles:read')) {
+            sendAdminMessage('ROLES', 'GET_ALL', {})
+            addLoadingProcess('ROLES')
+          }
 
-        sendAdminMessage('SETTINGS', 'GET_ORGANIZATION_NAME', {})
-        addLoadingProcess('ORGANIZATION')
+          sendAdminMessage('SETTINGS', 'GET_ORGANIZATION', {})
+          addLoadingProcess('ORGANIZATION')
 
-        sendAdminMessage('IMAGES', 'GET_ALL', {})
-        addLoadingProcess('LOGO')
+          if (check(rules, loggedInUserState, 'settings:update')) {
+            sendAdminMessage('SETTINGS', 'GET_SMTP', {})
+            addLoadingProcess('SMTP')
+          }
 
-        // This is the example of atuthorizing websockets
-        if (check(rules, loggedInUserState, 'users:read')) {
-          sendAdminMessage('USERS', 'GET_ALL', {})
-          addLoadingProcess('USERS')
-        }
+          sendAdminMessage('IMAGES', 'GET_ALL', {})
+          addLoadingProcess('LOGO')
+
+          // This is the example of atuthorizing websockets
+          if (check(rules, loggedInUserState, 'users:read')) {
+            sendAdminMessage('USERS', 'GET_ALL', {})
+            addLoadingProcess('USERS')
+          }
+        }, 1000)
       }
 
       controllerAdminSocket.current.onclose = (event) => {
@@ -252,8 +274,57 @@ function App() {
           parsedMessage.data
         )
       }
+    } else if (!session && !loggedIn && anonwebsocket) {
+      controllerAnonSocket.current.onopen = () => {
+        // Resetting state to false to allow spinner while waiting for messages
+        setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
+
+        // Wait for the roles for come back to start sending messages
+        setTimeout(() => {
+          sendAnonMessage('SETTINGS', 'GET_THEME', {})
+          addLoadingProcess('THEME')
+          sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
+          addLoadingProcess('SCHEMAS')
+
+          sendAnonMessage('SETTINGS', 'GET_ORGANIZATION', {})
+          addLoadingProcess('ORGANIZATION')
+
+          sendAnonMessage('IMAGES', 'GET_ALL', {})
+          addLoadingProcess('LOGO')
+        }, 1000)
+      }
+
+      controllerAnonSocket.current.onclose = (event) => {
+        // Auto Reopen websocket connection
+        // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
+
+        setLoggedIn(false)
+        setAdminWebsocket(!adminwebsocket)
+      }
+
+      // Error Handler
+      controllerAnonSocket.current.onerror = (event) => {
+        setNotification('Client Error - Websockets', 'error')
+      }
+
+      // Receive new message from Controller Server
+      controllerAnonSocket.current.onmessage = (message) => {
+        const parsedMessage = JSON.parse(message.data)
+
+        messageHandler(
+          parsedMessage.context,
+          parsedMessage.type,
+          parsedMessage.data
+        )
+      }
     }
-  }, [session, loggedIn, users, user, adminwebsocket, image, loggedInUserState]) // (Simon) We have to listen to all 7 to for the app to function properly
+  }, [session, loggedIn, users, user, adminwebsocket, image, loggedInUserState]) // (eldersonar) We have to listen to all 7 for the app to function properly
+
+  // (eldersonar) Shut down the websocket
+  function closeWSConnection(code, reason) {
+    controllerAdminSocket.current.close(code, reason)
+    // console.log(controllerSocket.current)
+  }
 
   // Send a message to the Controller server
   function sendAnonMessage(context, type, data = {}) {
@@ -302,6 +373,11 @@ function App() {
               )
               break
 
+            case 'WEBSOCKET_ERROR':
+              clearLoadingProcess()
+              setErrorMessage(data.error)
+              break
+
             default:
               setNotification(
                 `Error - Unrecognized Websocket Message Type: ${type}`,
@@ -318,8 +394,8 @@ function App() {
               break
 
             case 'INVITATIONS_ERROR':
-              console.log(data.error)
-              console.log('Invitations Error')
+              // console.log(data.error)
+              // console.log('Invitations Error')
               setErrorMessage(data.error)
 
               break
@@ -369,8 +445,8 @@ function App() {
               break
 
             case 'CONTACTS_ERROR':
-              console.log(data.error)
-              console.log('Contacts Error')
+              // console.log(data.error)
+              // console.log('Contacts Error')
               setErrorMessage(data.error)
 
               break
@@ -384,61 +460,39 @@ function App() {
           }
           break
 
+        case 'OUT_OF_BAND':
+          switch (type) {
+            case 'INVITATION':
+              setQRCodeURL(data.invitation_record)
+              break
+
+            case 'INVITATIONS_ERROR':
+              console.log(data.error)
+              console.log('Invitations Error')
+              setErrorMessage(data.error)
+
+              break
+            default:
+              setNotification(
+                `Error - Unrecognized Websocket Message Type: ${type}`,
+                'error'
+              )
+              break
+          }
+          break
+
         case 'DEMOGRAPHICS':
           switch (type) {
             case 'DEMOGRAPHICS_ERROR':
-              console.log(data.error)
-              console.log('Demographics Error')
+              // console.log(data.error)
+              // console.log('Demographics Error')
               setErrorMessage(data.error)
 
               break
 
             case 'CONTACTS_ERROR':
-              console.log(data.error)
-              console.log('CONTACTS ERROR')
-              setErrorMessage(data.error)
-
-              break
-
-            default:
-              setNotification(
-                `Error - Unrecognized Websocket Message Type: ${type}`,
-                'error'
-              )
-              break
-          }
-          break
-
-        case 'DEMOGRAPHICS':
-          switch (type) {
-            case 'DEMOGRAPHICS_ERROR':
-              console.log(data.error)
-              console.log('DEMOGRAPHICS ERROR')
-              setErrorMessage(data.error)
-
-              break
-
-            case 'CONTACTS_ERROR':
-              console.log(data.error)
-              console.log('CONTACTS ERROR')
-              setErrorMessage(data.error)
-
-              break
-
-            default:
-              setNotification(
-                `Error - Unrecognized Websocket Message Type: ${type}`,
-                'error'
-              )
-              break
-          }
-          break
-
-        case 'DEMOGRAPHICS':
-          switch (type) {
-            case 'DEMOGRAPHICS_ERROR':
-              console.log(data.error)
-              console.log('DEMOGRAPHICS ERROR')
+              // console.log(data.error)
+              // console.log('CONTACTS ERROR')
               setErrorMessage(data.error)
 
               break
@@ -537,8 +591,8 @@ function App() {
               break
 
             case 'PASSWORD_UPDATED':
-              // (Simon) Replace the user with the updated user based on password)
-              console.log('PASSWORD UPDATED')
+              // (eldersonar) Replace the user with the updated user based on password)
+              // console.log('PASSWORD UPDATED')
               setUsers(
                 users.map((x) =>
                   x.user_id === data.updatedUserPassword.user_id
@@ -557,7 +611,7 @@ function App() {
               break
 
             case 'USER_DELETED':
-              console.log('USER DELETED')
+              // console.log('USER DELETED')
               const index = users.findIndex((v) => v.user_id === data)
               let alteredUsers = [...users]
               alteredUsers.splice(index, 1)
@@ -566,14 +620,13 @@ function App() {
               break
 
             case 'USER_ERROR':
-              console.log('User Error', data.error)
-
+              // setErrorMessage(data.error)
               setErrorMessage(data.error)
 
               break
 
             case 'USER_SUCCESS':
-              console.log('USER SUCCESS')
+              // console.log('USER SUCCESS')
               setSuccessMessage(data)
 
               break
@@ -600,7 +653,7 @@ function App() {
                     oldCredential !== null &&
                     newCredential !== null &&
                     oldCredential.credential_exchange_id ===
-                      newCredential.credential_exchange_id
+                    newCredential.credential_exchange_id
                   ) {
                     // (mikekebert) If you find a match, delete the old copy from the old array
                     oldCredentials.splice(index, 1)
@@ -625,22 +678,8 @@ function App() {
               break
 
             case 'CREDENTIALS_ERROR':
-              console.log(data.error)
-              console.log('Credentials Error')
-              setErrorMessage(data.error)
-
-              break
-
-            case 'CREDENTIALS_ERROR':
-              console.log(data.error)
-              console.log('CREDENTIALS ERROR')
-              setErrorMessage(data.error)
-
-              break
-
-            case 'CREDENTIALS_ERROR':
-              console.log(data.error)
-              console.log('CREDENTIALS ERROR')
+              // console.log(data.error)
+              // console.log('CREDENTIALS ERROR')
               setErrorMessage(data.error)
 
               break
@@ -668,6 +707,47 @@ function App() {
               setVerificationStatus(false)
 
               break
+
+            case 'PRESENTATION_REPORTS':
+              let oldPresentations = presentationReports
+              let newPresentations = data.presentation_reports
+              let updatedPresentations = []
+
+                // (mikekebert) Loop through the new presentation and check them against the existing array
+                newPresentations.forEach((newPresentation) => {
+                  oldPresentations.forEach((oldPresentation, index) => {
+                    if (
+                      oldPresentation !== null &&
+                      newPresentation !== null &&
+                      oldPresentation.presentation_exchange_id ===
+                      newPresentation.presentation_exchange_id
+                    ) {
+                      // (mikekebert) If you find a match, delete the old copy from the old array
+                      console.log('splice', oldPresentation)
+                      oldPresentations.splice(index, 1)
+                    }
+                  })
+                  updatedPresentations.push(newPresentation)
+                  // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
+                  if (newPresentation.connection_id === pendingConnectionID) {
+                    setPendingConnectionID('')
+                  }
+                })
+                // (mikekebert) When you reach the end of the list of new presentations, simply add any remaining old presentations to the new array
+                if (oldPresentations.length > 0)
+                  updatedPresentations = [
+                    ...updatedPresentations,
+                    ...oldPresentations,
+                  ]
+                // (mikekebert) Sort the array by date created, newest on top
+                updatedPresentations.sort((a, b) =>
+                  a.created_at < b.created_at ? 1 : -1
+                )
+  
+                setPresentationReports(updatedPresentations)
+                removeLoadingProcess('PRESENTATIONS')
+
+              break
             default:
               setNotification(
                 `Error - Unrecognized Websocket Message Type: ${type}`,
@@ -688,19 +768,29 @@ function App() {
               removeLoadingProcess('THEME')
               break
 
+            case 'SETTINGS_SCHEMAS':
+              setSchemas(data)
+              removeLoadingProcess('SCHEMAS')
+              break
+
             case 'LOGO':
               setImage(data)
               removeLoadingProcess('LOGO')
               break
 
             case 'SETTINGS_ORGANIZATION':
-              setOrganizationName(data.companyName)
+              setOrganizationName(data.organizationName)
+              setSiteTitle(data.title)
               removeLoadingProcess('ORGANIZATION')
               break
 
-            case 'SETTINGS_ERROR':
-              console.log('Settings Error:', data.error)
+            case 'SETTINGS_SMTP':
+              setSmtp(data.value)
+              removeLoadingProcess('SMTP')
+              break
 
+            case 'SETTINGS_ERROR':
+              // console.log('Settings Error:', data.error)
               setErrorMessage(data.error)
               break
 
@@ -721,12 +811,11 @@ function App() {
           switch (type) {
             case 'IMAGE_LIST':
               setImage(data)
-
               removeLoadingProcess('IMAGES')
               break
 
             case 'IMAGES_ERROR':
-              console.log('Images Error:', data.error)
+              // console.log('Images Error:', data.error)
               setErrorMessage(data.error)
               break
 
@@ -756,6 +845,30 @@ function App() {
           }
           break
 
+        case 'GOVERNANCE':
+          switch (type) {
+            case 'PRIVILEGES_ERROR':
+              console.log(data)
+              console.log('Privileges Error', data.error)
+              setErrorMessage(data.error)
+              break
+
+            case 'PRIVILEGES_SUCCESS':
+              console.log('PRIVILEGES SUCCESS')
+              console.log('these are the privileges:')
+              console.log(data.privileges)
+              setPrivileges(data.privileges)
+              break
+
+            default:
+              setNotification(
+                `Error - Unrecognized Websocket Message Type: ${type}`,
+                'error'
+              )
+              break
+          }
+          break
+
         default:
           setNotification(
             `Error - Unrecognized Websocket Message Type: ${context}`,
@@ -773,6 +886,11 @@ function App() {
     loadingArray.push(process)
   }
 
+  function clearLoadingProcess() {
+    loadingArray = []
+    setAppIsLoaded(true)
+  }
+
   function removeLoadingProcess(process) {
     const index = loadingArray.indexOf(process)
 
@@ -781,7 +899,7 @@ function App() {
     }
 
     if (loadingArray.length === 0) {
-      setAppIsLoaded(true) // (Simon) This will break the app. See controllerSocket.current.onopen
+      setAppIsLoaded(true) // (Eldersonar) This will break the app. See controllerSocket.current.onopen
     }
   }
 
@@ -836,14 +954,27 @@ function App() {
     setSuccessMessage(null)
   }
 
+  // Logout and redirect
   const handleLogout = (history) => {
-    setLoggedIn(false)
-    cookies.remove('sessionId')
-    cookies.remove('user')
+    Axios({
+      method: 'POST',
+      url: '/api/user/log-out',
+      withCredentals: true,
+    }).then((res) => {
+      setLoggedIn(false)
+      setSession('')
+      setAdminWebsocket(false)
+      setLoggedInUserState(null)
+      setLoggedInUserId('')
+      setLoggedInUsername('')
+      setLoggedInRoles([])
 
-    if (history !== undefined) {
-      history.push('/admin/login')
-    }
+      // (eldersonar) Does this close the connection and remove the connection object?
+      closeWSConnection(1000, 'Log out')
+      if (history !== undefined) {
+        history.push('/login')
+      }
+    })
   }
 
   if ((loggedIn && !appIsLoaded) || (!loggedIn && !appIsLoaded)) {
@@ -972,7 +1103,11 @@ function App() {
                     return (
                       <AdminRoute
                         loggedInUserState={loggedInUserState}
+                        rules={rules}
+                        check={check}
+                        schemas={schemas}
                         image={image}
+                        privileges={privileges}
                         organizationName={organizationName}
                         loggedInUsername={loggedInUsername}
                         handleLogout={handleLogout}
@@ -993,6 +1128,8 @@ function App() {
                         stylesArray={stylesArray}
                         addStylesToArray={addStylesToArray}
                         removeStylesFromArray={removeStylesFromArray}
+                        presentationReports={presentationReports}
+                        smtp={smtp}
                       />
                     )
                   }}
