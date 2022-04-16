@@ -207,6 +207,8 @@ function App() {
           addLoadingProcess('THEME')
           sendAdminMessage('SETTINGS', 'GET_SCHEMAS', {})
           addLoadingProcess('SCHEMAS')
+          sendAdminMessage('GOVERNANCE', 'GET_PRIVILEGES', {})
+          addLoadingProcess('GOVERNANCE')
 
           if (
             check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
@@ -851,6 +853,7 @@ function App() {
               console.log(data)
               console.log('Privileges Error', data.error)
               setErrorMessage(data.error)
+              removeLoadingProcess('GOVERNANCE')
               break
 
             case 'PRIVILEGES_SUCCESS':
