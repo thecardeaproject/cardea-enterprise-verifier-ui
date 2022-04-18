@@ -465,7 +465,7 @@ function Settings(props) {
           </span>
         </ReactTooltip>
         <Form onSubmit={handleSubmit} ref={organizationForm}>
-        <BlockInput
+          <BlockInput
             name="organizationName"
             placeholder="Organization Name"
             defaultValue={props.organizationName ? props.organizationName : ''}
