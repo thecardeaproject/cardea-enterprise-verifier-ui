@@ -1133,6 +1133,8 @@ function App() {
                         removeStylesFromArray={removeStylesFromArray}
                         presentationReports={presentationReports}
                         smtp={smtp}
+                        organizationName={organizationName}
+                        siteTitle={siteTitle}
                       />
                     )
                   }}
