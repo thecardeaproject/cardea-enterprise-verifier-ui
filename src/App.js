@@ -68,8 +68,9 @@ function App() {
   const controllerAnonSocket = useRef()
 
   // Used for websocket auto reconnect
-  const [adminwebsocket, setAdminWebsocket] = useState(false)
-  const [anonwebsocket, setAnonWebsocket] = useState(false)
+  const [adminWebsocket, setAdminWebsocket] = useState(false)
+  const [anonWebsocket, setAnonWebsocket] = useState(false)
+  const [readyForMessages, setReadyForMessages] = useState(false)
 
   // State governs whether the app should be loaded. Depends on the loadingArray
   const [appIsLoaded, setAppIsLoaded] = useState(false)
@@ -118,188 +119,17 @@ function App() {
   // Perform First Time Setup. Connect to Controller Server via Websockets
 
   // always configure the anon websocket for Verification
-  if (!anonwebsocket) {
-    let url = new URL('/api/anon/ws', window.location.href)
-    url.protocol = url.protocol.replace('http', 'ws')
-    controllerAnonSocket.current = new WebSocket(url.href)
-    setAnonWebsocket(true)
-
-    controllerAnonSocket.current.onclose = (event) => {
-      // Auto Reopen websocket connection
-      // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
-
-      setLoggedIn(false)
-      setAnonWebsocket(!anonwebsocket)
-    }
-
-    // Error Handler
-    controllerAnonSocket.current.onerror = (event) => {
-      setNotification('Client Error - Websockets', 'error')
-    }
-
-    // Receive new message from Controller Server
-    controllerAnonSocket.current.onmessage = (message) => {
-      const parsedMessage = JSON.parse(message.data)
-
-      messageHandler(
-        parsedMessage.context,
-        parsedMessage.type,
-        parsedMessage.data
-      )
-    }
-  }
-
-  // Setting up websocket and controllerSocket
   useEffect(() => {
-    if (session && loggedIn && adminwebsocket) {
-      let url = new URL('/api/admin/ws', window.location.href)
+    if (!anonWebsocket) {
+      let url = new URL('/api/anon/ws', window.location.href)
       url.protocol = url.protocol.replace('http', 'ws')
-      controllerAdminSocket.current = new WebSocket(url.href)
-      setAdminWebsocket(true)
-    }
-  }, [loggedIn, session, adminwebsocket])
-
-  // TODO: Setting logged-in user and session states on app mount
-  useEffect(() => {
-    Axios({
-      method: 'GET',
-      url: '/api/renew-session',
-    })
-      .then((res) => {
-        // console.log(res)
-
-        if (cookies.get('sessionId')) {
-          // Update session expiration date
-          setSession(cookies.get('sessionId'))
-          setLoggedIn(true)
-          setAdminWebsocket(true)
-
-          setLoggedInUserState(res.data)
-          setLoggedInUserId(res.data.id)
-          setLoggedInUsername(res.data.username)
-          setLoggedInRoles(res.data.roles)
-        } else setAppIsLoaded(true)
-      })
-      .catch((error) => {
-        // Unauthorized
-        setAppIsLoaded(true)
-      })
-  }, [loggedIn])
-
-  // (eldersonar) Set-up site title. What about SEO? Will robots be able to read it?
-  useEffect(() => {
-    document.title = siteTitle
-  }, [siteTitle])
-
-  // Define Websocket event listeners
-  useEffect(() => {
-    // Perform operation on websocket open
-    // Run web sockets only if authenticated
-    if (session && loggedIn && adminwebsocket) {
-      controllerAdminSocket.current.onopen = () => {
-        // Resetting state to false to allow spinner while waiting for messages
-        setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
-
-        // Wait for the roles for come back to start sending messages
-        // console.log('Ready to send messages')
-        setTimeout(() => {
-          sendAdminMessage('SETTINGS', 'GET_THEME', {})
-          addLoadingProcess('THEME')
-          sendAdminMessage('SETTINGS', 'GET_SCHEMAS', {})
-          addLoadingProcess('SCHEMAS')
-
-          if (
-            check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
-          ) {
-            sendAdminMessage('CONTACTS', 'GET_ALL', {
-              additional_tables: ['Demographic', 'Passport'],
-            })
-            addLoadingProcess('CONTACTS')
-          }
-
-          if (check(rules, loggedInUserState, 'credentials:read')) {
-            sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
-            addLoadingProcess('CREDENTIALS')
-          }
-
-          if (check(rules, loggedInUserState, 'presentations:read')) {
-            sendAdminMessage('PRESENTATIONS', 'GET_ALL', {})
-            addLoadingProcess('PRESENTATIONS')
-          }
-
-          if (check(rules, loggedInUserState, 'roles:read')) {
-            sendAdminMessage('ROLES', 'GET_ALL', {})
-            addLoadingProcess('ROLES')
-          }
-
-          sendAdminMessage('SETTINGS', 'GET_ORGANIZATION', {})
-          addLoadingProcess('ORGANIZATION')
-
-          if (check(rules, loggedInUserState, 'settings:update')) {
-            sendAdminMessage('SETTINGS', 'GET_SMTP', {})
-            addLoadingProcess('SMTP')
-          }
-
-          sendAdminMessage('IMAGES', 'GET_ALL', {})
-          addLoadingProcess('LOGO')
-
-          // This is the example of atuthorizing websockets
-          if (check(rules, loggedInUserState, 'users:read')) {
-            sendAdminMessage('USERS', 'GET_ALL', {})
-            addLoadingProcess('USERS')
-          }
-        }, 1000)
-      }
-
-      controllerAdminSocket.current.onclose = (event) => {
-        // Auto Reopen websocket connection
-        // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
-
-        setLoggedIn(false)
-        setAdminWebsocket(!adminwebsocket)
-      }
-
-      // Error Handler
-      controllerAdminSocket.current.onerror = (event) => {
-        setNotification('Client Error - Websockets', 'error')
-      }
-
-      // Receive new message from Controller Server
-      controllerAdminSocket.current.onmessage = (message) => {
-        const parsedMessage = JSON.parse(message.data)
-
-        messageHandler(
-          parsedMessage.context,
-          parsedMessage.type,
-          parsedMessage.data
-        )
-      }
-    } else if (!session && !loggedIn && anonwebsocket) {
-      controllerAnonSocket.current.onopen = () => {
-        // Resetting state to false to allow spinner while waiting for messages
-        setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
-
-        // Wait for the roles for come back to start sending messages
-        setTimeout(() => {
-          sendAnonMessage('SETTINGS', 'GET_THEME', {})
-          addLoadingProcess('THEME')
-          sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
-          addLoadingProcess('SCHEMAS')
-
-          sendAnonMessage('SETTINGS', 'GET_ORGANIZATION', {})
-          addLoadingProcess('ORGANIZATION')
-
-          sendAnonMessage('IMAGES', 'GET_ALL', {})
-          addLoadingProcess('LOGO')
-        }, 1000)
-      }
+      controllerAnonSocket.current = new WebSocket(url.href)
+      setAnonWebsocket(true)
 
       controllerAnonSocket.current.onclose = (event) => {
         // Auto Reopen websocket connection
         // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
-
-        setLoggedIn(false)
-        setAdminWebsocket(!adminwebsocket)
+        setAnonWebsocket(false)
       }
 
       // Error Handler
@@ -318,12 +148,148 @@ function App() {
         )
       }
     }
-  }, [session, loggedIn, users, user, adminwebsocket, image, loggedInUserState]) // (eldersonar) We have to listen to all 7 for the app to function properly
+  }, [])
+
+  // TODO: Setting logged-in user and session states on app mount
+  useEffect(() => {
+    Axios({
+      method: 'GET',
+      url: '/api/renew-session',
+    })
+      .then((res) => {
+        // console.log(res)
+
+        if (cookies.get('sessionId')) {
+          // Update session expiration date
+          setSession(cookies.get('sessionId'))
+          setLoggedIn(true)
+
+          setLoggedInUserState(res.data)
+          setLoggedInUserId(res.data.id)
+          setLoggedInUsername(res.data.username)
+          setLoggedInRoles(res.data.roles)
+        } else setAppIsLoaded(true)
+      })
+      .catch((error) => {
+        // Unauthorized
+        setAppIsLoaded(true)
+      })
+  }, [loggedIn])
+
+  // Setting up websocket and controllerSocket
+  useEffect(() => {
+    if (session && loggedIn) {
+      let url = new URL('/api/admin/ws', window.location.href)
+      url.protocol = url.protocol.replace('http', 'ws')
+      controllerAdminSocket.current = new WebSocket(url.href)
+
+      controllerAdminSocket.current.onopen = () => {
+        setAdminWebsocket(true)
+      }
+
+      controllerAdminSocket.current.onclose = (event) => {
+        // Auto Reopen websocket connection
+        // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
+
+        setReadyForMessages(false)
+        setLoggedIn(false)
+        setAdminWebsocket(false)
+      }
+
+      // Error Handler
+      controllerAdminSocket.current.onerror = (event) => {
+        setNotification('Client Error - Websockets', 'error')
+      }
+
+      // Receive new message from Controller Server
+      controllerAdminSocket.current.onmessage = (message) => {
+        const parsedMessage = JSON.parse(message.data)
+
+        messageHandler(
+          parsedMessage.context,
+          parsedMessage.type,
+          parsedMessage.data
+        )
+      }
+    }
+  }, [loggedIn, session])
+
+  // (eldersonar) Set-up site title. What about SEO? Will robots be able to read it?
+  useEffect(() => {
+    document.title = siteTitle
+  }, [siteTitle])
+
+  // Define Websocket event listeners
+  useEffect(() => {
+    // Perform operation on websocket open
+    // Run web sockets only if authenticated
+    if (session && loggedIn && adminWebsocket && readyForMessages) {
+      sendAdminMessage('SETTINGS', 'GET_THEME', {})
+      addLoadingProcess('THEME')
+      sendAdminMessage('SETTINGS', 'GET_SCHEMAS', {})
+      addLoadingProcess('SCHEMAS')
+      sendAdminMessage('GOVERNANCE', 'GET_PRIVILEGES', {})
+      addLoadingProcess('GOVERNANCE')
+
+      if (
+        check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
+      ) {
+        sendAdminMessage('CONTACTS', 'GET_ALL', {
+          additional_tables: ['Demographic', 'Passport'],
+        })
+        addLoadingProcess('CONTACTS')
+      }
+
+      if (check(rules, loggedInUserState, 'credentials:read')) {
+        sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
+        addLoadingProcess('CREDENTIALS')
+      }
+
+      if (check(rules, loggedInUserState, 'presentations:read')) {
+        sendAdminMessage('PRESENTATIONS', 'GET_ALL', {})
+        addLoadingProcess('PRESENTATIONS')
+      }
+
+      if (check(rules, loggedInUserState, 'roles:read')) {
+        sendAdminMessage('ROLES', 'GET_ALL', {})
+        addLoadingProcess('ROLES')
+      }
+
+      sendAdminMessage('SETTINGS', 'GET_ORGANIZATION', {})
+      addLoadingProcess('ORGANIZATION')
+
+      if (check(rules, loggedInUserState, 'settings:update')) {
+        sendAdminMessage('SETTINGS', 'GET_SMTP', {})
+        addLoadingProcess('SMTP')
+      }
+
+      sendAdminMessage('IMAGES', 'GET_ALL', {})
+      addLoadingProcess('LOGO')
+
+      // This is the example of atuthorizing websockets
+      if (check(rules, loggedInUserState, 'users:read')) {
+        sendAdminMessage('USERS', 'GET_ALL', {})
+        addLoadingProcess('USERS')
+      }
+    } else if (!session && !loggedIn && anonWebsocket) {
+      controllerAnonSocket.current.onopen = () => {
+        sendAnonMessage('SETTINGS', 'GET_THEME', {})
+        addLoadingProcess('THEME')
+        sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
+        addLoadingProcess('SCHEMAS')
+
+        sendAnonMessage('SETTINGS', 'GET_ORGANIZATION', {})
+        addLoadingProcess('ORGANIZATION')
+
+        sendAnonMessage('IMAGES', 'GET_ALL', {})
+        addLoadingProcess('LOGO')
+      }
+    }
+  }, [session, loggedIn, adminWebsocket, readyForMessages, anonWebsocket])
 
   // (eldersonar) Shut down the websocket
   function closeWSConnection(code, reason) {
     controllerAdminSocket.current.close(code, reason)
-    // console.log(controllerSocket.current)
   }
 
   // Send a message to the Controller server
@@ -342,14 +308,7 @@ function App() {
 
   // Send a message to the Controller server
   function sendAdminMessage(context, type, data = {}) {
-    if (
-      controllerAdminSocket.current.readyState !==
-      controllerAdminSocket.current.OPEN
-    ) {
-      setTimeout(function () {
-        sendAdminMessage(context, type, data)
-      }, 100)
-    } else {
+    if (adminWebsocket) {
       controllerAdminSocket.current.send(
         JSON.stringify({ context, type, data })
       )
@@ -653,7 +612,7 @@ function App() {
                     oldCredential !== null &&
                     newCredential !== null &&
                     oldCredential.credential_exchange_id ===
-                    newCredential.credential_exchange_id
+                      newCredential.credential_exchange_id
                   ) {
                     // (mikekebert) If you find a match, delete the old copy from the old array
                     oldCredentials.splice(index, 1)
@@ -713,39 +672,39 @@ function App() {
               let newPresentations = data.presentation_reports
               let updatedPresentations = []
 
-                // (mikekebert) Loop through the new presentation and check them against the existing array
-                newPresentations.forEach((newPresentation) => {
-                  oldPresentations.forEach((oldPresentation, index) => {
-                    if (
-                      oldPresentation !== null &&
-                      newPresentation !== null &&
-                      oldPresentation.presentation_exchange_id ===
+              // (mikekebert) Loop through the new presentation and check them against the existing array
+              newPresentations.forEach((newPresentation) => {
+                oldPresentations.forEach((oldPresentation, index) => {
+                  if (
+                    oldPresentation !== null &&
+                    newPresentation !== null &&
+                    oldPresentation.presentation_exchange_id ===
                       newPresentation.presentation_exchange_id
-                    ) {
-                      // (mikekebert) If you find a match, delete the old copy from the old array
-                      console.log('splice', oldPresentation)
-                      oldPresentations.splice(index, 1)
-                    }
-                  })
-                  updatedPresentations.push(newPresentation)
-                  // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
-                  if (newPresentation.connection_id === pendingConnectionID) {
-                    setPendingConnectionID('')
+                  ) {
+                    // (mikekebert) If you find a match, delete the old copy from the old array
+                    console.log('splice', oldPresentation)
+                    oldPresentations.splice(index, 1)
                   }
                 })
-                // (mikekebert) When you reach the end of the list of new presentations, simply add any remaining old presentations to the new array
-                if (oldPresentations.length > 0)
-                  updatedPresentations = [
-                    ...updatedPresentations,
-                    ...oldPresentations,
-                  ]
-                // (mikekebert) Sort the array by date created, newest on top
-                updatedPresentations.sort((a, b) =>
-                  a.created_at < b.created_at ? 1 : -1
-                )
-  
-                setPresentationReports(updatedPresentations)
-                removeLoadingProcess('PRESENTATIONS')
+                updatedPresentations.push(newPresentation)
+                // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
+                if (newPresentation.connection_id === pendingConnectionID) {
+                  setPendingConnectionID('')
+                }
+              })
+              // (mikekebert) When you reach the end of the list of new presentations, simply add any remaining old presentations to the new array
+              if (oldPresentations.length > 0)
+                updatedPresentations = [
+                  ...updatedPresentations,
+                  ...oldPresentations,
+                ]
+              // (mikekebert) Sort the array by date created, newest on top
+              updatedPresentations.sort((a, b) =>
+                a.created_at < b.created_at ? 1 : -1
+              )
+
+              setPresentationReports(updatedPresentations)
+              removeLoadingProcess('PRESENTATIONS')
 
               break
             default:
@@ -755,7 +714,21 @@ function App() {
               )
               break
           }
+          break
 
+        case 'SERVER':
+          switch (type) {
+            case 'WEBSOCKET_READY':
+              setReadyForMessages(true)
+              break
+
+            default:
+              setNotification(
+                `Error - Unrecognized Websocket Message Type: ${type}`,
+                'error'
+              )
+              break
+          }
           break
 
         case 'SETTINGS':
@@ -858,6 +831,7 @@ function App() {
               console.log('these are the privileges:')
               console.log(data.privileges)
               setPrivileges(data.privileges)
+              removeLoadingProcess('GOVERNANCE')
               break
 
             default:
@@ -1113,7 +1087,6 @@ function App() {
                         handleLogout={handleLogout}
                         sendMessage={sendAdminMessage}
                         QRCodeURL={QRCodeURL}
-                        loggedInUsername={loggedInUsername}
                         contacts={contacts}
                         credentials={credentials}
                         roles={roles}

@@ -47,7 +47,6 @@ function Home(props) {
 
   const [index, setIndex] = useState(false)
 
-
   const [oob, setOOB] = useState(false)
 
   const [scanModalIsOpen, setScanModalIsOpen] = useState(false)
@@ -76,14 +75,14 @@ function Home(props) {
     } else return
   }, [error, success, warning])
 
-  // Get governance privileges
-  useEffect(() => {
-    isMounted.current = true
-    props.sendRequest('GOVERNANCE', 'GET_PRIVILEGES', {})
-    return () => {
-      isMounted.current = false
-    }
-  }, [])
+  // // Get governance privileges
+  // useEffect(() => {
+  //   isMounted.current = true
+  //   props.sendRequest('GOVERNANCE', 'GET_PRIVILEGES', {})
+  //   return () => {
+  //     isMounted.current = false
+  //   }
+  // }, [])
 
   const scanInvite = (type) => {
     type === 'oob' ? setOOB(true) : setOOB(false)
