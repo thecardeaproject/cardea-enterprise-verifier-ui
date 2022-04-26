@@ -213,6 +213,7 @@ function AdminRoutes(props) {
                     logo={props.image}
                     organizationName={props.organizationName}
                     match={match}
+                    handleLogout={props.handleLogout}
                   />
                   <Main>
                     <Credential
@@ -369,6 +370,7 @@ function AdminRoutes(props) {
                   logo={props.image}
                   organizationName={props.organizationName}
                   match={match}
+                  handleLogout={props.handleLogout}
                 />
                 <Main>
                   <User
@@ -410,6 +412,8 @@ function AdminRoutes(props) {
                       removeStylesFromArray={props.removeStylesFromArray}
                       sendRequest={props.sendMessage}
                       smtp={props.smtp}
+                      organizationName={props.organizationName}
+                      siteTitle={props.siteTitle}
                     />
                   </Main>
                 </Frame>

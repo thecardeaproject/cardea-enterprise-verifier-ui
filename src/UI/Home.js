@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import styled from 'styled-components'
 
@@ -43,20 +43,13 @@ function Home(props) {
   const localUser = props.loggedInUserState
   const privileges = props.privileges
 
-  const [govGranted, setGovGranted] = useState(undefined)
-
   const [index, setIndex] = useState(false)
-
-
   const [oob, setOOB] = useState(false)
-
   const [scanModalIsOpen, setScanModalIsOpen] = useState(false)
   const [displayModalIsOpen, setDisplayModalIsOpen] = useState(false)
 
   const closeScanModal = () => setScanModalIsOpen(false)
   const closeDisplayModal = () => setDisplayModalIsOpen(false)
-
-  const isMounted = useRef(null)
 
   // Accessing notification context
   const setNotification = useNotification()
@@ -75,15 +68,6 @@ function Home(props) {
       setIndex(index + 1)
     } else return
   }, [error, success, warning])
-
-  // Get governance privileges
-  useEffect(() => {
-    isMounted.current = true
-    props.sendRequest('GOVERNANCE', 'GET_PRIVILEGES', {})
-    return () => {
-      isMounted.current = false
-    }
-  }, [])
 
   const scanInvite = (type) => {
     type === 'oob' ? setOOB(true) : setOOB(false)
