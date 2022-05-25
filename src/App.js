@@ -1,7 +1,7 @@
 import Axios from 'axios'
 
 import Cookies from 'universal-cookie'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 
 import {
   BrowserRouter as Router,
@@ -58,8 +58,9 @@ function App() {
 
   const cookies = new Cookies()
 
-  // Keep track of loading processes
-  let loadingArray = []
+  // (AmmonBurgi) Keeps track of loading processes. The useMemo is necessary to preserve list across re-renders.
+  const adminLoadingList = useMemo(() => [], [])
+  const anonLoadingList = useMemo(() => [], [])
 
   const setNotification = useNotification()
 
@@ -230,7 +231,8 @@ function App() {
       loggedIn &&
       adminWebsocket &&
       readyForAdminMessages &&
-      loggedInUserState
+      loggedInUserState &&
+      adminLoadingList.length === 0
     ) {
       sendAdminMessage('SETTINGS', 'GET_THEME', {})
       addLoadingProcess('THEME')
@@ -279,7 +281,13 @@ function App() {
         sendAdminMessage('USERS', 'GET_ALL', {})
         addLoadingProcess('USERS')
       }
-    } else if (!session && !loggedIn && anonWebsocket && readyForAnonMessages) {
+    } else if (
+      !session &&
+      !loggedIn &&
+      anonWebsocket &&
+      readyForAnonMessages &&
+      anonLoadingList.length === 0
+    ) {
       sendAnonMessage('SETTINGS', 'GET_THEME', {})
       addLoadingProcess('THEME')
       sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
@@ -854,6 +862,7 @@ function App() {
               console.log(data)
               console.log('Privileges Error', data.error)
               setErrorMessage(data.error)
+              removeLoadingProcess('GOVERNANCE')
               break
 
             case 'PRIVILEGES_SUCCESS':
@@ -887,23 +896,38 @@ function App() {
   }
 
   function addLoadingProcess(process) {
-    loadingArray.push(process)
+    if (!session && !loggedIn) {
+      anonLoadingList.push(process)
+    } else {
+      adminLoadingList.push(process)
+    }
   }
 
   function clearLoadingProcess() {
-    loadingArray = []
+    adminLoadingList = []
+    anonLoadingList = []
     setAppIsLoaded(true)
   }
 
   function removeLoadingProcess(process) {
-    const index = loadingArray.indexOf(process)
+    if (!session && !loggedIn) {
+      const index = anonLoadingList.indexOf(process)
+      if (index > -1) {
+        anonLoadingList.splice(index, 1)
+      }
 
-    if (index > -1) {
-      loadingArray.splice(index, 1)
-    }
+      if (anonLoadingList.length === 0) {
+        setAppIsLoaded(true)
+      }
+    } else {
+      const index = adminLoadingList.indexOf(process)
+      if (index > -1) {
+        adminLoadingList.splice(index, 1)
+      }
 
-    if (loadingArray.length === 0) {
-      setAppIsLoaded(true) // (Eldersonar) This will break the app. See controllerSocket.current.onopen
+      if (adminLoadingList.length === 0) {
+        setAppIsLoaded(true)
+      }
     }
   }
 
