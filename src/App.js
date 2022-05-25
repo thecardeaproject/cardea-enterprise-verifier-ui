@@ -1,7 +1,7 @@
 import Axios from 'axios'
 
 import Cookies from 'universal-cookie'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 
 import {
   BrowserRouter as Router,
@@ -58,8 +58,9 @@ function App() {
 
   const cookies = new Cookies()
 
-  // Keep track of loading processes
-  let loadingArray = []
+  // (AmmonBurgi) Keeps track of loading processes. The useMemo is necessary to preserve list across re-renders.
+  const adminLoadingList = useMemo(() => [], [])
+  const anonLoadingList = useMemo(() => [], [])
 
   const setNotification = useNotification()
 
@@ -68,8 +69,10 @@ function App() {
   const controllerAnonSocket = useRef()
 
   // Used for websocket auto reconnect
-  const [adminwebsocket, setAdminWebsocket] = useState(false)
-  const [anonwebsocket, setAnonWebsocket] = useState(false)
+  const [adminWebsocket, setAdminWebsocket] = useState(false)
+  const [anonWebsocket, setAnonWebsocket] = useState(false)
+  const [readyForAdminMessages, setReadyForAdminMessages] = useState(false)
+  const [readyForAnonMessages, setReadyForAnonMessages] = useState(false)
 
   // State governs whether the app should be loaded. Depends on the loadingArray
   const [appIsLoaded, setAppIsLoaded] = useState(false)
@@ -118,18 +121,21 @@ function App() {
   // Perform First Time Setup. Connect to Controller Server via Websockets
 
   useEffect(() => {
-    if (!anonwebsocket) {
+    if (!anonWebsocket) {
       let url = new URL('/api/anon/ws', window.location.href)
       url.protocol = url.protocol.replace('http', 'ws')
       controllerAnonSocket.current = new WebSocket(url.href)
-      setAnonWebsocket(true)
+
+      controllerAnonSocket.current.onopen = (event) => {
+        setAnonWebsocket(true)
+      }
 
       controllerAnonSocket.current.onclose = (event) => {
         // Auto Reopen websocket connection
         // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
 
-        setLoggedIn(false)
-        setAnonWebsocket(!anonwebsocket)
+        setReadyForAnonMessages(false)
+        setAnonWebsocket(false)
       }
 
       // Error Handler
@@ -150,16 +156,6 @@ function App() {
     }
   }, [])
 
-  // Setting up websocket and controllerSocket
-  useEffect(() => {
-    if (session && loggedIn && adminwebsocket) {
-      let url = new URL('/api/admin/ws', window.location.href)
-      url.protocol = url.protocol.replace('http', 'ws')
-      controllerAdminSocket.current = new WebSocket(url.href)
-      setAdminWebsocket(true)
-    }
-  }, [loggedIn, session, adminwebsocket])
-
   // TODO: Setting logged-in user and session states on app mount
   useEffect(() => {
     Axios({
@@ -167,13 +163,10 @@ function App() {
       url: '/api/renew-session',
     })
       .then((res) => {
-        // console.log(res)
-
         if (cookies.get('sessionId')) {
           // Update session expiration date
           setSession(cookies.get('sessionId'))
           setLoggedIn(true)
-          setAdminWebsocket(true)
 
           setLoggedInUserState(res.data)
           setLoggedInUserId(res.data.id)
@@ -187,82 +180,24 @@ function App() {
       })
   }, [loggedIn])
 
-  // (eldersonar) Set-up site title. What about SEO? Will robots be able to read it?
+  // Setting up websocket and controllerSocket
   useEffect(() => {
-    document.title = siteTitle
-  }, [siteTitle])
+    if (session && loggedIn) {
+      let url = new URL('/api/admin/ws', window.location.href)
+      url.protocol = url.protocol.replace('http', 'ws')
+      controllerAdminSocket.current = new WebSocket(url.href)
 
-  // Define Websocket event listeners
-  useEffect(() => {
-    // Perform operation on websocket open
-    // Run web sockets only if authenticated
-    if (session && loggedIn && adminwebsocket) {
       controllerAdminSocket.current.onopen = () => {
-        // Resetting state to false to allow spinner while waiting for messages
-        setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
-
-        // Wait for the roles for come back to start sending messages
-        // console.log('Ready to send messages')
-        setTimeout(() => {
-          sendAdminMessage('SETTINGS', 'GET_THEME', {})
-          addLoadingProcess('THEME')
-          sendAdminMessage('SETTINGS', 'GET_SCHEMAS', {})
-          addLoadingProcess('SCHEMAS')
-
-          if (
-            check(
-              rules,
-              loggedInUserState,
-              'contacts:read',
-              'demographics:read'
-            )
-          ) {
-            sendAdminMessage('CONTACTS', 'GET_ALL', {
-              additional_tables: ['Demographic', 'Passport'],
-            })
-            addLoadingProcess('CONTACTS')
-          }
-
-          if (check(rules, loggedInUserState, 'credentials:read')) {
-            sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
-            addLoadingProcess('CREDENTIALS')
-          }
-
-          if (check(rules, loggedInUserState, 'presentations:read')) {
-            sendAdminMessage('PRESENTATIONS', 'GET_ALL', {})
-            addLoadingProcess('PRESENTATIONS')
-          }
-
-          if (check(rules, loggedInUserState, 'roles:read')) {
-            sendAdminMessage('ROLES', 'GET_ALL', {})
-            addLoadingProcess('ROLES')
-          }
-
-          sendAdminMessage('SETTINGS', 'GET_ORGANIZATION', {})
-          addLoadingProcess('ORGANIZATION')
-
-          if (check(rules, loggedInUserState, 'settings:update')) {
-            sendAdminMessage('SETTINGS', 'GET_SMTP', {})
-            addLoadingProcess('SMTP')
-          }
-
-          sendAdminMessage('IMAGES', 'GET_ALL', {})
-          addLoadingProcess('LOGO')
-
-          // This is the example of atuthorizing websockets
-          if (check(rules, loggedInUserState, 'users:read')) {
-            sendAdminMessage('USERS', 'GET_ALL', {})
-            addLoadingProcess('USERS')
-          }
-        }, 1000)
+        setAdminWebsocket(true)
       }
 
       controllerAdminSocket.current.onclose = (event) => {
         // Auto Reopen websocket connection
         // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
 
+        setReadyForAdminMessages(false)
         setLoggedIn(false)
-        setAdminWebsocket(!adminwebsocket)
+        setAdminWebsocket(false)
       }
 
       // Error Handler
@@ -280,82 +215,115 @@ function App() {
           parsedMessage.data
         )
       }
-    } else if (!session && !loggedIn && anonwebsocket) {
-      controllerAnonSocket.current.onopen = () => {
-        // Resetting state to false to allow spinner while waiting for messages
-        setAppIsLoaded(false) // This doesn't work as expected. See function removeLoadingProcess
-
-        // Wait for the roles for come back to start sending messages
-        setTimeout(() => {
-          sendAnonMessage('SETTINGS', 'GET_THEME', {})
-          addLoadingProcess('THEME')
-          sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
-          addLoadingProcess('SCHEMAS')
-
-          sendAnonMessage('SETTINGS', 'GET_ORGANIZATION', {})
-          addLoadingProcess('ORGANIZATION')
-
-          sendAnonMessage('IMAGES', 'GET_ALL', {})
-          addLoadingProcess('LOGO')
-        }, 1000)
-      }
-
-      controllerAnonSocket.current.onclose = (event) => {
-        // Auto Reopen websocket connection
-        // (JamesKEbert) TODO: Converse on sessions, session timeout and associated UI
-
-        setLoggedIn(false)
-        setAdminWebsocket(!adminwebsocket)
-      }
-
-      // Error Handler
-      controllerAnonSocket.current.onerror = (event) => {
-        setNotification('Client Error - Websockets', 'error')
-      }
-
-      // Receive new message from Controller Server
-      controllerAnonSocket.current.onmessage = (message) => {
-        const parsedMessage = JSON.parse(message.data)
-
-        messageHandler(
-          parsedMessage.context,
-          parsedMessage.type,
-          parsedMessage.data
-        )
-      }
     }
-  }, [session, loggedIn, users, user, adminwebsocket, image, loggedInUserState]) // (eldersonar) We have to listen to all 7 for the app to function properly
+  }, [loggedIn, session])
+
+  // (eldersonar) Set-up site title. What about SEO? Will robots be able to read it?
+  useEffect(() => {
+    document.title = siteTitle
+  }, [siteTitle])
+
+  useEffect(() => {
+    // Perform operation on websocket open
+    // Run web sockets only if authenticated
+    if (
+      session &&
+      loggedIn &&
+      adminWebsocket &&
+      readyForAdminMessages &&
+      loggedInUserState &&
+      adminLoadingList.length === 0
+    ) {
+      sendAdminMessage('SETTINGS', 'GET_THEME', {})
+      addLoadingProcess('THEME')
+      sendAdminMessage('SETTINGS', 'GET_SCHEMAS', {})
+      addLoadingProcess('SCHEMAS')
+      sendAdminMessage('GOVERNANCE', 'GET_PRIVILEGES', {})
+      addLoadingProcess('GOVERNANCE')
+
+      if (
+        check(rules, loggedInUserState, 'contacts:read', 'demographics:read')
+      ) {
+        sendAdminMessage('CONTACTS', 'GET_ALL', {
+          additional_tables: ['Demographic', 'Passport'],
+        })
+        addLoadingProcess('CONTACTS')
+      }
+
+      if (check(rules, loggedInUserState, 'credentials:read')) {
+        sendAdminMessage('CREDENTIALS', 'GET_ALL', {})
+        addLoadingProcess('CREDENTIALS')
+      }
+
+      if (check(rules, loggedInUserState, 'presentations:read')) {
+        sendAdminMessage('PRESENTATIONS', 'GET_ALL', {})
+        addLoadingProcess('PRESENTATIONS')
+      }
+
+      if (check(rules, loggedInUserState, 'roles:read')) {
+        sendAdminMessage('ROLES', 'GET_ALL', {})
+        addLoadingProcess('ROLES')
+      }
+
+      sendAdminMessage('SETTINGS', 'GET_ORGANIZATION', {})
+      addLoadingProcess('ORGANIZATION')
+
+      if (check(rules, loggedInUserState, 'settings:update')) {
+        sendAdminMessage('SETTINGS', 'GET_SMTP', {})
+        addLoadingProcess('SMTP')
+      }
+
+      sendAdminMessage('IMAGES', 'GET_ALL', {})
+      addLoadingProcess('LOGO')
+
+      // This is the example of atuthorizing websockets
+      if (check(rules, loggedInUserState, 'users:read')) {
+        sendAdminMessage('USERS', 'GET_ALL', {})
+        addLoadingProcess('USERS')
+      }
+    } else if (
+      !session &&
+      !loggedIn &&
+      anonWebsocket &&
+      readyForAnonMessages &&
+      anonLoadingList.length === 0
+    ) {
+      sendAnonMessage('SETTINGS', 'GET_THEME', {})
+      addLoadingProcess('THEME')
+      sendAnonMessage('SETTINGS', 'GET_SCHEMAS', {})
+      addLoadingProcess('SCHEMAS')
+
+      sendAnonMessage('SETTINGS', 'GET_ORGANIZATION', {})
+      addLoadingProcess('ORGANIZATION')
+
+      sendAnonMessage('IMAGES', 'GET_ALL', {})
+      addLoadingProcess('LOGO')
+    }
+  }, [
+    session,
+    loggedIn,
+    adminWebsocket,
+    readyForAdminMessages,
+    loggedInUserState,
+    anonWebsocket,
+    readyForAnonMessages,
+  ])
 
   // (eldersonar) Shut down the websocket
   function closeWSConnection(code, reason) {
     controllerAdminSocket.current.close(code, reason)
-    // console.log(controllerSocket.current)
   }
 
   // Send a message to the Controller server
   function sendAnonMessage(context, type, data = {}) {
-    if (
-      controllerAnonSocket.current.readyState !==
-      controllerAnonSocket.current.OPEN
-    ) {
-      setTimeout(function () {
-        sendAnonMessage(context, type, data)
-      }, 100)
-    } else {
+    if (anonWebsocket) {
       controllerAnonSocket.current.send(JSON.stringify({ context, type, data }))
     }
   }
 
   // Send a message to the Controller server
   function sendAdminMessage(context, type, data = {}) {
-    if (
-      controllerAdminSocket.current.readyState !==
-      controllerAdminSocket.current.OPEN
-    ) {
-      setTimeout(function () {
-        sendAdminMessage(context, type, data)
-      }, 100)
-    } else {
+    if (adminWebsocket) {
       controllerAdminSocket.current.send(
         JSON.stringify({ context, type, data })
       )
@@ -515,29 +483,32 @@ function App() {
         case 'ROLES':
           switch (type) {
             case 'ROLES':
-              let oldRoles = roles
-              let newRoles = data.roles
-              let updatedRoles = []
-              // (mikekebert) Loop through the new roles and check them against the existing array
-              newRoles.forEach((newRole) => {
-                oldRoles.forEach((oldRole, index) => {
-                  if (
-                    oldRole !== null &&
-                    newRole !== null &&
-                    oldRole.role_id === newRole.role_id
-                  ) {
-                    // (mikekebert) If you find a match, delete the old copy from the old array
-                    oldRoles.splice(index, 1)
-                  }
+              setRoles((prevRoles) => {
+                let oldRoles = prevRoles
+                let newRoles = data.roles
+                let updatedRoles = []
+                // (mikekebert) Loop through the new roles and check them against the existing array
+                newRoles.forEach((newRole) => {
+                  oldRoles.forEach((oldRole, index) => {
+                    if (
+                      oldRole !== null &&
+                      newRole !== null &&
+                      oldRole.role_id === newRole.role_id
+                    ) {
+                      // (mikekebert) If you find a match, delete the old copy from the old array
+                      oldRoles.splice(index, 1)
+                    }
+                  })
+                  updatedRoles.push(newRole)
                 })
-                updatedRoles.push(newRole)
-              })
-              // (mikekebert) When you reach the end of the list of new roles, simply add any remaining old roles to the new array
-              if (oldRoles.length > 0)
-                updatedRoles = [...updatedRoles, ...oldRoles]
+                // (mikekebert) When you reach the end of the list of new roles, simply add any remaining old roles to the new array
+                if (oldRoles.length > 0)
+                  updatedRoles = [...updatedRoles, ...oldRoles]
 
-              setRoles(updatedRoles)
+                return updatedRoles
+              })
               removeLoadingProcess('ROLES')
+
               break
 
             default:
@@ -552,32 +523,34 @@ function App() {
         case 'USERS':
           switch (type) {
             case 'USERS':
-              let oldUsers = users
-              let newUsers = data.users
-              let updatedUsers = []
-              // (mikekebert) Loop through the new users and check them against the existing array
-              newUsers.forEach((newUser) => {
-                oldUsers.forEach((oldUser, index) => {
-                  if (
-                    oldUser !== null &&
-                    newUser !== null &&
-                    oldUser.user_id === newUser.user_id
-                  ) {
-                    // (mikekebert) If you find a match, delete the old copy from the old array
-                    oldUsers.splice(index, 1)
-                  }
+              setUsers((prevUsers) => {
+                let oldUsers = prevUsers
+                let newUsers = data.users
+                let updatedUsers = []
+                // (mikekebert) Loop through the new users and check them against the existing array
+                newUsers.forEach((newUser) => {
+                  oldUsers.forEach((oldUser, index) => {
+                    if (
+                      oldUser !== null &&
+                      newUser !== null &&
+                      oldUser.user_id === newUser.user_id
+                    ) {
+                      // (mikekebert) If you find a match, delete the old copy from the old array
+                      oldUsers.splice(index, 1)
+                    }
+                  })
+                  updatedUsers.push(newUser)
                 })
-                updatedUsers.push(newUser)
-              })
-              // (mikekebert) When you reach the end of the list of new users, simply add any remaining old users to the new array
-              if (oldUsers.length > 0)
-                updatedUsers = [...updatedUsers, ...oldUsers]
-              // (mikekebert) Sort the array by data created, newest on top
-              updatedUsers.sort((a, b) =>
-                a.created_at < b.created_at ? 1 : -1
-              )
+                // (mikekebert) When you reach the end of the list of new users, simply add any remaining old users to the new array
+                if (oldUsers.length > 0)
+                  updatedUsers = [...updatedUsers, ...oldUsers]
+                // (mikekebert) Sort the array by data created, newest on top
+                updatedUsers.sort((a, b) =>
+                  a.created_at < b.created_at ? 1 : -1
+                )
 
-              setUsers(updatedUsers)
+                return updatedUsers
+              })
               removeLoadingProcess('USERS')
 
               break
@@ -588,40 +561,45 @@ function App() {
               break
 
             case 'USER_UPDATED':
-              setUsers(
-                users.map((x) =>
+              setUsers((prevUsers) => {
+                return prevUsers.map((x) =>
                   x.user_id === data.updatedUser.user_id ? data.updatedUser : x
                 )
-              )
+              })
               setUser(data.updatedUser)
+
               break
 
             case 'PASSWORD_UPDATED':
               // (eldersonar) Replace the user with the updated user based on password)
-              // console.log('PASSWORD UPDATED')
-              setUsers(
-                users.map((x) =>
+              setUsers((prevUsers) => {
+                return prevUsers.map((x) =>
                   x.user_id === data.updatedUserPassword.user_id
                     ? data.updatedUserPassword
                     : x
                 )
-              )
+              })
+
               break
 
             case 'USER_CREATED':
-              let newUser = data.user[0]
-              let oldUsers2 = users
-              oldUsers2.push(newUser)
-              setUsers(oldUsers2)
+              setUsers((prevUsers) => {
+                let updatedUsers = [...prevUsers, data.user[0]]
+                return updatedUsers.sort((a, b) =>
+                  a.created_at < b.created_at ? 1 : -1
+                )
+              })
               setUser(data.user[0])
+
               break
 
             case 'USER_DELETED':
-              // console.log('USER DELETED')
-              const index = users.findIndex((v) => v.user_id === data)
-              let alteredUsers = [...users]
-              alteredUsers.splice(index, 1)
-              setUsers(alteredUsers)
+              setUsers((prevUsers) => {
+                const index = prevUsers.findIndex((v) => v.user_id === data)
+                let alteredUsers = [...prevUsers]
+                alteredUsers.splice(index, 1)
+                return alteredUsers
+              })
 
               break
 
@@ -649,38 +627,44 @@ function App() {
         case 'CREDENTIALS':
           switch (type) {
             case 'CREDENTIALS':
-              let oldCredentials = credentials
-              let newCredentials = data.credential_records
-              let updatedCredentials = []
-              // (mikekebert) Loop through the new credentials and check them against the existing array
-              newCredentials.forEach((newCredential) => {
-                oldCredentials.forEach((oldCredential, index) => {
-                  if (
-                    oldCredential !== null &&
-                    newCredential !== null &&
-                    oldCredential.credential_exchange_id ===
-                      newCredential.credential_exchange_id
-                  ) {
-                    // (mikekebert) If you find a match, delete the old copy from the old array
-                    oldCredentials.splice(index, 1)
+              setCredentials((prevCred) => {
+                let oldCredentials = prevCred
+                let newCredentials = data.credential_records
+                let updatedCredentials = []
+                // (mikekebert) Loop through the new credentials and check them against the existing array
+                newCredentials.forEach((newCredential) => {
+                  oldCredentials.forEach((oldCredential, index) => {
+                    if (
+                      oldCredential !== null &&
+                      newCredential !== null &&
+                      oldCredential.credential_exchange_id ===
+                        newCredential.credential_exchange_id
+                    ) {
+                      // (mikekebert) If you find a match, delete the old copy from the old array
+                      oldCredentials.splice(index, 1)
+                    }
+                  })
+                  updatedCredentials.push(newCredential)
+                  // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
+                  if (newCredential.connection_id === pendingConnectionID) {
+                    setPendingConnectionID('')
                   }
                 })
-                updatedCredentials.push(newCredential)
-                // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
-                if (newCredential.connection_id === pendingConnectionID) {
-                  setPendingConnectionID('')
-                }
-              })
-              // (mikekebert) When you reach the end of the list of new credentials, simply add any remaining old credentials to the new array
-              if (oldCredentials.length > 0)
-                updatedCredentials = [...updatedCredentials, ...oldCredentials]
-              // (mikekebert) Sort the array by data created, newest on top
-              updatedCredentials.sort((a, b) =>
-                a.created_at < b.created_at ? 1 : -1
-              )
+                // (mikekebert) When you reach the end of the list of new credentials, simply add any remaining old credentials to the new array
+                if (oldCredentials.length > 0)
+                  updatedCredentials = [
+                    ...updatedCredentials,
+                    ...oldCredentials,
+                  ]
+                // (mikekebert) Sort the array by data created, newest on top
+                updatedCredentials.sort((a, b) =>
+                  a.created_at < b.created_at ? 1 : -1
+                )
 
-              setCredentials(updatedCredentials)
+                return updatedCredentials
+              })
               removeLoadingProcess('CREDENTIALS')
+
               break
 
             case 'CREDENTIALS_ERROR':
@@ -715,45 +699,48 @@ function App() {
               break
 
             case 'PRESENTATION_REPORTS':
-              let oldPresentations = presentationReports
-              let newPresentations = data.presentation_reports
-              let updatedPresentations = []
+              setPresentationReports((prevPresentations) => {
+                let oldPresentations = prevPresentations
+                let newPresentations = data.presentation_reports
+                let updatedPresentations = []
 
-              // (mikekebert) Loop through the new presentation and check them against the existing array
-              newPresentations.forEach((newPresentation) => {
-                oldPresentations.forEach((oldPresentation, index) => {
-                  if (
-                    oldPresentation !== null &&
-                    newPresentation !== null &&
-                    oldPresentation.presentation_exchange_id ===
-                      newPresentation.presentation_exchange_id
-                  ) {
-                    // (mikekebert) If you find a match, delete the old copy from the old array
-                    console.log('splice', oldPresentation)
-                    oldPresentations.splice(index, 1)
+                // (mikekebert) Loop through the new presentation and check them against the existing array
+                newPresentations.forEach((newPresentation) => {
+                  oldPresentations.forEach((oldPresentation, index) => {
+                    if (
+                      oldPresentation !== null &&
+                      newPresentation !== null &&
+                      oldPresentation.presentation_exchange_id ===
+                        newPresentation.presentation_exchange_id
+                    ) {
+                      // (mikekebert) If you find a match, delete the old copy from the old array
+                      console.log('splice', oldPresentation)
+                      oldPresentations.splice(index, 1)
+                    }
+                  })
+                  updatedPresentations.push(newPresentation)
+                  // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
+                  if (newPresentation.connection_id === pendingConnectionID) {
+                    setPendingConnectionID('')
                   }
                 })
-                updatedPresentations.push(newPresentation)
-                // (mikekebert) We also want to make sure to reset any pending connection IDs so the modal windows don't pop up automatically
-                if (newPresentation.connection_id === pendingConnectionID) {
-                  setPendingConnectionID('')
-                }
-              })
-              // (mikekebert) When you reach the end of the list of new presentations, simply add any remaining old presentations to the new array
-              if (oldPresentations.length > 0)
-                updatedPresentations = [
-                  ...updatedPresentations,
-                  ...oldPresentations,
-                ]
-              // (mikekebert) Sort the array by date created, newest on top
-              updatedPresentations.sort((a, b) =>
-                a.created_at < b.created_at ? 1 : -1
-              )
+                // (mikekebert) When you reach the end of the list of new presentations, simply add any remaining old presentations to the new array
+                if (oldPresentations.length > 0)
+                  updatedPresentations = [
+                    ...updatedPresentations,
+                    ...oldPresentations,
+                  ]
+                // (mikekebert) Sort the array by date created, newest on top
+                updatedPresentations.sort((a, b) =>
+                  a.created_at < b.created_at ? 1 : -1
+                )
 
-              setPresentationReports(updatedPresentations)
+                return updatedPresentations
+              })
               removeLoadingProcess('PRESENTATIONS')
 
               break
+
             default:
               setNotification(
                 `Error - Unrecognized Websocket Message Type: ${type}`,
@@ -761,7 +748,25 @@ function App() {
               )
               break
           }
+          break
 
+        case 'SERVER':
+          switch (type) {
+            case 'ANON_WEBSOCKET_READY':
+              setReadyForAnonMessages(true)
+              break
+
+            case 'ADMIN_WEBSOCKET_READY':
+              setReadyForAdminMessages(true)
+              break
+
+            default:
+              setNotification(
+                `Error - Unrecognized Websocket Message Type: ${type}`,
+                'error'
+              )
+              break
+          }
           break
 
         case 'SETTINGS':
@@ -857,6 +862,7 @@ function App() {
               console.log(data)
               console.log('Privileges Error', data.error)
               setErrorMessage(data.error)
+              removeLoadingProcess('GOVERNANCE')
               break
 
             case 'PRIVILEGES_SUCCESS':
@@ -864,6 +870,7 @@ function App() {
               console.log('these are the privileges:')
               console.log(data.privileges)
               setPrivileges(data.privileges)
+              removeLoadingProcess('GOVERNANCE')
               break
 
             default:
@@ -889,23 +896,38 @@ function App() {
   }
 
   function addLoadingProcess(process) {
-    loadingArray.push(process)
+    if (!session && !loggedIn) {
+      anonLoadingList.push(process)
+    } else {
+      adminLoadingList.push(process)
+    }
   }
 
   function clearLoadingProcess() {
-    loadingArray = []
+    adminLoadingList = []
+    anonLoadingList = []
     setAppIsLoaded(true)
   }
 
   function removeLoadingProcess(process) {
-    const index = loadingArray.indexOf(process)
+    if (!session && !loggedIn) {
+      const index = anonLoadingList.indexOf(process)
+      if (index > -1) {
+        anonLoadingList.splice(index, 1)
+      }
 
-    if (index > -1) {
-      loadingArray.splice(index, 1)
-    }
+      if (anonLoadingList.length === 0) {
+        setAppIsLoaded(true)
+      }
+    } else {
+      const index = adminLoadingList.indexOf(process)
+      if (index > -1) {
+        adminLoadingList.splice(index, 1)
+      }
 
-    if (loadingArray.length === 0) {
-      setAppIsLoaded(true) // (Eldersonar) This will break the app. See controllerSocket.current.onopen
+      if (adminLoadingList.length === 0) {
+        setAppIsLoaded(true)
+      }
     }
   }
 
@@ -918,7 +940,7 @@ function App() {
 
   // Update theme state locally
   const updateTheme = (update) => {
-    return setTheme({ ...theme, ...update })
+    return setTheme((prevTheme) => ({ ...prevTheme, ...update }))
   }
 
   // Update theme in the database
@@ -949,7 +971,7 @@ function App() {
       for (let key in defaultTheme)
         if ((key = undoKey)) {
           const undo = { [`${key}`]: defaultTheme[key] }
-          return setTheme({ ...theme, ...undo })
+          return setTheme((prevTheme) => ({ ...prevTheme, ...undo }))
         }
     }
   }
@@ -1075,6 +1097,8 @@ function App() {
                 render={() => {
                   return (
                     <Root
+                      anonWebsocket={anonWebsocket}
+                      readyForAnonMessages={readyForAnonMessages}
                       QRCodeURL={QRCodeURL}
                       sendRequest={sendAnonMessage}
                       contacts={contacts}
